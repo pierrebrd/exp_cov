@@ -156,6 +156,7 @@ include_directories(
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
+  scripts/distance_check.py
   scripts/fuse_maps_floorplan.py
   scripts/map_rgb_simul.py
   scripts/optimization_data.py
