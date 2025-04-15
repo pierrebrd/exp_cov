@@ -1,8 +1,8 @@
 reset;
 
-model /home/paolo/tesi/exp_cov/src/exp_cov/optimization/coverage_linear.mod;
+model E:\tesi\exp_cov\src\exp_cov\optimization\coverage_linear.mod;
 
-data /home/paolo/tesi/exp_cov/src/exp_cov/maps_rgb_lab/map1test2/solutions/data100.dat;
+data E:\tesi\exp_cov\src\exp_cov\maps_rgb_lab\map2test1\solution\data150.dat;
 
 option solver cplex;
 
@@ -10,14 +10,38 @@ option times 1;
 
 option gentimes 1;
 
-option show_stats1;
+option show_stats 1;
 
 solve;
 
-display _varname > /home/paolo/tesi/exp_cov/src/exp_cov/maps_rgb_lab/map1test2/solutions/solved100.txt;
+display _varname > E:\tesi\exp_cov\src\exp_cov\maps_rgb_lab\map2test1\solution\solved150.txt;
 
-display guard_choice > /home/paolo/tesi/exp_cov/src/exp_cov/maps_rgb_lab/map1test2/solutions/guards100.txt;
+display guard_choice > E:\tesi\exp_cov\src\exp_cov\maps_rgb_lab\map2test1\solution\guards150.txt;
 
-option option omit_zero_rows 1;
+option omit_zero_rows 1;
 
-display guard_choice > /home/paolo/tesi/exp_cov/src/exp_cov/maps_rgb_lab/map1test2/solutions/filteredGuards100.txt;
+display guard_choice > E:\tesi\exp_cov\src\exp_cov\maps_rgb_lab\map2test1\solution\filteredGuards150.txt;
+
+reset;
+
+model E:\tesi\exp_cov\src\exp_cov\optimization\coverage_linear.mod;
+
+data E:\tesi\exp_cov\src\exp_cov\maps_rgb_lab\map2test1\solution\data200.dat;
+
+option solver cplex;
+
+option times 1;
+
+option gentimes 1;
+
+option show_stats 1;
+
+solve;
+
+display _varname > E:\tesi\exp_cov\src\exp_cov\maps_rgb_lab\map2test1\solution\solved200.txt;
+
+display guard_choice > E:\tesi\exp_cov\src\exp_cov\maps_rgb_lab\map2test1\solution\guards200.txt;
+
+option omit_zero_rows 1;
+
+display guard_choice > E:\tesi\exp_cov\src\exp_cov\maps_rgb_lab\map2test1\solution\filteredGuards200.txt;
