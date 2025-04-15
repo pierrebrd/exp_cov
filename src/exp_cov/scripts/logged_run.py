@@ -48,6 +48,7 @@ def parse_args():
     parser.add_argument('--waypoints', required=True, help="Path to the waypoints csv file.")
     parser.add_argument('--world', required=True, help="Path to the stage world file.")
     parser.add_argument('-r', '--runs', required=False, default=1,  type=check_positive, help="Number of tests to run.", metavar="RUNS")
+    parser.add_argument('-d', '-dir', required=False, default="", help="Directory to save the run data.", metavar="DIR")
     return parser.parse_args()
 
 def now():
@@ -72,7 +73,7 @@ def run_expl(logfile_path, run_subfolder = ""):
     """
     start = None
     args = ["roslaunch", "exp_cov", "explore_lite2.launch"]
-    error_log_path = os.path.join(run_subfolder, "errorLog.txt")
+    error_log_path = os.path.join(run_subfolder, "exploreErrorLog.txt")
     
     with sp.Popen(args, stdout=sp.PIPE, stderr=sp.STDOUT) as process:
         with open(logfile_path, mode="+a", encoding="utf-8") as logfile, \
@@ -132,7 +133,7 @@ def run_cov(waypoints, logfile_path="./coverage.log", run_subfolder = ""):
     """
     start = None
     args = ["rosrun", "exp_cov", "waypoint_navigation.py", "-p", waypoints]
-    error_log_path = os.path.join(run_subfolder, "errorLog.txt")
+    error_log_path = os.path.join(run_subfolder, "coverageErrorLog.txt")
     
     with sp.Popen(args, stdout=sp.PIPE, stderr=sp.STDOUT) as process:
         with open(logfile_path, mode="+a", encoding="utf-8") as logfile, \
@@ -272,7 +273,7 @@ def main(cmd_args):
     Main execution logic for the exploration vs coverage comparison.
 
     For each run:
-    1. Creates a new run directory
+    1. Creates a new run directory (within parent directory if specified)
     2. Executes exploration and coverage tests
     3. Compares and logs:
         - Time differences between strategies
@@ -286,18 +287,25 @@ def main(cmd_args):
     logfile_path_coverage = "coverage.log"
     logfile_path_result = "result.log"
 
+    # Crea la directory parent se specificata e non esiste
+    parent_dir = cmd_args.d if cmd_args.d else "."
+    if parent_dir != "." and not os.path.exists(parent_dir):
+        os.makedirs(parent_dir)
+
+    # Trova il numero massimo di run nella directory parent
     maxrun = 0
-    for i in os.listdir(os.getcwd()):
+    for i in os.listdir(parent_dir):
         try:
             if int(i[3:]) >= maxrun:
                 maxrun = int(i[3:]) + 1
         except:
             continue
+
     time_deltas = list()
     area_deltas = list()
     for r in range(int(cmd_args.runs)):
         print(f"run {r+1}/{cmd_args.runs} starting.")
-        run_subfolder = f"run{maxrun+r}"
+        run_subfolder = os.path.join(parent_dir, f"run{maxrun+r}")
         os.mkdir(run_subfolder)
         logfile_path_exploration_run = os.path.join(run_subfolder, logfile_path_exploration)
         logfile_path_coverage_run = os.path.join(run_subfolder, logfile_path_coverage)
