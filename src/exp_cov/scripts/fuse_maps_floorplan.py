@@ -17,6 +17,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Merge maps automatically.')
     parser.add_argument("-d", '--dir', default=os.getcwd(),
         help="Base directory to read maps from.")
+    parser.add_argument("-o", '--output-dir', default=os.path.join(os.getcwd(), "solution"),
+        help="Directory where to save the output files (relative or absolute path)")
     parser.add_argument("--gt-floorplan", default="",
         help="Ground truth floorplan to compare to.")
     parser.add_argument("--sample-test", default=False, action='store_true',
@@ -85,7 +87,7 @@ def update_floorplan(floorplan, image):
     image[np.where(non_bw_mask == 255)] = [0]
     return cv2.bitwise_or(floorplan, image)
 
-def fuse(samples: int, base_dir: str = os.getcwd(), gt_floorplan_path: str ="", complete: bool = False):
+def fuse(samples: int, base_dir: str = os.getcwd(), output_dir: str = os.path.join(os.getcwd(), "solution"), gt_floorplan_path: str ="", complete: bool = False):
 
     gt_floorplan = None
     if gt_floorplan_path != "":
@@ -99,11 +101,12 @@ def fuse(samples: int, base_dir: str = os.getcwd(), gt_floorplan_path: str ="", 
     sample_dir = ""
     if complete:
         print("Sample size complete.")
+        sample_dir = output_dir
     else:
-        sample_dir = f"{samples}_sample_size"
+        sample_dir = os.path.join(output_dir, f"{samples}_sample_size")
         print(f"Sample size equal to {samples}.")
-    os.makedirs(os.path.join(os.getcwd(), sample_dir, USED_DIRNAME), exist_ok=True)
-    os.makedirs(os.path.join(os.getcwd(), sample_dir, IGNORED_DIRNAME), exist_ok=True)
+    os.makedirs(os.path.join(sample_dir, USED_DIRNAME), exist_ok=True)
+    os.makedirs(os.path.join(sample_dir, IGNORED_DIRNAME), exist_ok=True)
 
     image_paths = []
     MAP_EXTENSIONS = {".png", ".pgm"}
@@ -126,14 +129,14 @@ def fuse(samples: int, base_dir: str = os.getcwd(), gt_floorplan_path: str ="", 
         image =  cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
         if abs(image.shape[0]-max_height) >= MAX_HEIGHT_ERROR or abs(image.shape[1]-max_width) >= MAX_WIDTH_ERROR:
             print(f"Floorplan creation: skipping image {os.path.basename(image_path)} with dim error {image.shape[0]-max_height}, {image.shape[1]-max_width}")
-            cv2.imwrite(os.path.join(os.getcwd(), sample_dir, IGNORED_DIRNAME, os.path.basename(image_path)), image)
+            cv2.imwrite(os.path.join(sample_dir, IGNORED_DIRNAME, os.path.basename(image_path)), image)
             continue
         elif to_initialize:
             floorplan = init_floorplan(image.astype(np.uint8), max_height, max_width)
             to_initialize = False
         used += 1
         image_paths_acceptable.append(image_path)
-        cv2.imwrite(os.path.join(os.getcwd(), sample_dir, USED_DIRNAME, os.path.basename(image_path)), image)
+        cv2.imwrite(os.path.join(sample_dir, USED_DIRNAME, os.path.basename(image_path)), image)
         floorplan = update_floorplan(floorplan, image.astype(np.uint8))
 
     print(f"Floorplan creation: used {used} out of {len(image_paths)} images.")
@@ -166,7 +169,7 @@ def fuse(samples: int, base_dir: str = os.getcwd(), gt_floorplan_path: str ="", 
             floorplan_with_cost[h, w] = round((1-costs[h, w]) * 255)
 
     addition = probabilize(addition, used).astype(np.uint8)
-    cv2.imwrite(os.path.join(os.getcwd(), sample_dir, "addition.png"), addition)
+    cv2.imwrite(os.path.join(sample_dir, "addition.png"), addition)
 
     MANUAL_THRESHOLD = 190
     _, addition_thresholded = cv2.threshold(addition, MANUAL_THRESHOLD, 255, cv2.THRESH_BINARY)
@@ -186,23 +189,23 @@ def fuse(samples: int, base_dir: str = os.getcwd(), gt_floorplan_path: str ="", 
     tri = cv2.bitwise_and(tri, floorplan)
     tri = fill_holes(tri)
 
-    with open(os.path.join(os.getcwd(), sample_dir, "costs.txt"), "w") as costs_file:
+    with open(os.path.join(sample_dir, "costs.txt"), "w") as costs_file:
         for h in range(max_height):
             for w in range(max_width):
                 costs_file.write(f"{w} {h} {costs[h, w]}\n")
 
-    cv2.imwrite(os.path.join(os.getcwd(), sample_dir, "threshold.png"), addition_thresholded)
-    cv2.imwrite(os.path.join(os.getcwd(), sample_dir, "otsu.png"), otsu)
-    cv2.imwrite(os.path.join(os.getcwd(), sample_dir, "tri.png"), tri)
-    cv2.imwrite(os.path.join(os.getcwd(), sample_dir, "floorplan.png"), floorplan)
-    cv2.imwrite(os.path.join(os.getcwd(), sample_dir, "added_map.png"), addition)
+    cv2.imwrite(os.path.join(sample_dir, "threshold.png"), addition_thresholded)
+    cv2.imwrite(os.path.join(sample_dir, "otsu.png"), otsu)
+    cv2.imwrite(os.path.join(sample_dir, "tri.png"), tri)
+    cv2.imwrite(os.path.join(sample_dir, "floorplan.png"), floorplan)
+    cv2.imwrite(os.path.join(sample_dir, "added_map.png"), addition)
 
     # Create summary collage
     col_1 = np.vstack([floorplan, addition_thresholded])
     col_2 = np.vstack([floorplan_with_cost, otsu])
     col_3 = np.vstack([addition, tri])
     summary = np.hstack([col_1, col_2, col_3])
-    cv2.imwrite(os.path.join(os.getcwd(), sample_dir, "summary.png"), summary)
+    cv2.imwrite(os.path.join(sample_dir, "summary.png"), summary)
 
     if complete:
         if gt_floorplan is not None:
@@ -227,6 +230,7 @@ def main():
 
     args = parse_args()
     base_dir = args.dir
+    output_dir = os.path.abspath(args.output_dir)  # Converti in percorso assoluto
     gt_floorplan_path = args.gt_floorplan 
     sample_test = args.sample_test
     step = args.step
@@ -239,14 +243,17 @@ def main():
             if os.path.splitext(f)[1] in MAP_EXTENSIONS:
                 max_size += 1
 
+    # Crea la directory di output se non esiste
+    os.makedirs(output_dir, exist_ok=True)
+
     if not sample_test:
-        fuse(base_dir=base_dir, gt_floorplan_path=gt_floorplan_path, samples=max_size, complete=True)
+        fuse(base_dir=base_dir, output_dir=output_dir, gt_floorplan_path=gt_floorplan_path, samples=max_size, complete=True)
     else:
         # Note: real sample size <= given sample size because some maps may be discarded
         for sample_size in range(step, max_size+1, step):
-            fuse(base_dir=base_dir, gt_floorplan_path=gt_floorplan_path, samples=sample_size)
+            fuse(base_dir=base_dir, output_dir=output_dir, gt_floorplan_path=gt_floorplan_path, samples=sample_size)
         if (max_size + 1) % step != 0:
-            fuse(base_dir=base_dir, gt_floorplan_path=gt_floorplan_path, samples=max_size)
+            fuse(base_dir=base_dir, output_dir=output_dir, gt_floorplan_path=gt_floorplan_path, samples=max_size)
 
 if __name__ == "__main__":
     main()
