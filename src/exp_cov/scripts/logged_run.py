@@ -48,7 +48,7 @@ def parse_args():
     parser.add_argument('--waypoints', required=True, help="Path to the waypoints csv file.")
     parser.add_argument('--world', required=True, help="Path to the stage world file.")
     parser.add_argument('-r', '--runs', required=False, default=1,  type=check_positive, help="Number of tests to run.", metavar="RUNS")
-    parser.add_argument('-d', '-dir', required=False, default="", help="Directory to save the run data.", metavar="DIR")
+    parser.add_argument('-d', '--dir', required=False, default="", help="Directory to save the run data.", metavar="DIR")
     return parser.parse_args()
 
 def now():
@@ -288,7 +288,7 @@ def main(cmd_args):
     logfile_path_result = "result.log"
 
     # Crea la directory parent se specificata e non esiste
-    parent_dir = cmd_args.d if cmd_args.d else "."
+    parent_dir = cmd_args.dir if cmd_args.dir else "."
     if parent_dir != "." and not os.path.exists(parent_dir):
         os.makedirs(parent_dir)
 
