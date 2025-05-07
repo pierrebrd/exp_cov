@@ -74,15 +74,31 @@ def run_expl(logfile_path, run_subfolder = ""):
     start = None
     args = ["roslaunch", "exp_cov", "explore_lite2.launch"]
     error_log_path = os.path.join(run_subfolder, "exploreErrorLog.txt")
+    info_log_path = os.path.join(run_subfolder, "info.log")
+    last_message = None
+    last_message_time = 0
     
     with sp.Popen(args, stdout=sp.PIPE, stderr=sp.STDOUT) as process:
         with open(logfile_path, mode="+a", encoding="utf-8") as logfile, \
-             open(error_log_path, mode="+a", encoding="utf-8") as error_log:
+             open(error_log_path, mode="+a", encoding="utf-8") as error_log, \
+             open(info_log_path, mode="+a", encoding="utf-8") as info_log:
             try:
                 start = rospy.get_rostime().secs
                 logfile.write(f"{now()}: Starting exploration.\n")
                 for line in process.stdout:
                     line = line.decode('utf8')
+                    current_time = rospy.Time.now().secs
+                    
+                    # Log tutte le informazioni non di errore
+                    if not any(x in line.lower() for x in ["error", "abort", "stuck", "timeout"]):
+                        # Controlla se il messaggio deve essere loggato
+                        if should_log_message(line):
+                            # Se il messaggio è diverso dal precedente o è passato più di 1 secondo
+                            if line.strip() != last_message or (current_time - last_message_time) >= 1:
+                                info_log.write(f"{now()}: {line.strip()}\n")
+                                last_message = line.strip()
+                                last_message_time = current_time
+                    
                     # Check for error conditions in the output
                     if "error" in line.lower():
                         error_log.write(f"{now()}: Exploration Error - {line.strip()}\n")
@@ -119,6 +135,40 @@ def run_expl(logfile_path, run_subfolder = ""):
                 finally:
                     return time
 
+def should_log_message(line):
+    """
+    Determina se un messaggio deve essere loggato in info.log
+    """
+    # Lista di messaggi significativi da loggare
+    important_messages = [
+        "waypoint sender started",
+        "connected to move_base server",
+        "sending goal pose",
+        "goal pose reached",
+        "found frontiers",
+        "visualising frontiers",
+        "waiting for costmap"
+    ]
+    
+    # Ignora completamente certi tipi di messaggi
+    ignore_messages = [
+        "tf_repeated_data",
+        "getting status over the wire",
+        "debug",
+        "trying to publish",
+        "transitioning",
+        "received comm state"
+    ]
+    
+    line_lower = line.lower()
+    
+    # Se il messaggio contiene una delle stringhe da ignorare, non loggarlo
+    if any(x in line_lower for x in ignore_messages):
+        return False
+        
+    # Se il messaggio contiene una delle stringhe importanti, loggarlo
+    return any(x in line_lower for x in important_messages)
+
 def run_cov(waypoints, logfile_path="./coverage.log", run_subfolder = ""):
     """
     Run waypoint coverage navigation and save the resulting map.
@@ -134,25 +184,42 @@ def run_cov(waypoints, logfile_path="./coverage.log", run_subfolder = ""):
     start = None
     args = ["rosrun", "exp_cov", "waypoint_navigation.py", "-p", waypoints]
     error_log_path = os.path.join(run_subfolder, "coverageErrorLog.txt")
+    info_log_path = os.path.join(run_subfolder, "info.log")
+    last_message = None
+    last_message_time = 0
     
     with sp.Popen(args, stdout=sp.PIPE, stderr=sp.STDOUT) as process:
         with open(logfile_path, mode="+a", encoding="utf-8") as logfile, \
-             open(error_log_path, mode="+a", encoding="utf-8") as error_log:
+             open(error_log_path, mode="+a", encoding="utf-8") as error_log, \
+             open(info_log_path, mode="+a", encoding="utf-8") as info_log:
             try:
                 start = rospy.get_rostime().secs
                 logfile.write(f"{now()}: Starting waypoint navigation.\n")
                 for line in process.stdout:
                     line = line.decode('utf8')
-                    # Check for error conditions in the output
+                    current_time = rospy.Time.now().secs
+                    
+                    # Log tutte le informazioni non di errore
+                    if not any(x in line.lower() for x in ["error", "abort", "timeout", "recovery"]):
+                        # Controlla se il messaggio deve essere loggato
+                        if should_log_message(line):
+                            # Se il messaggio è diverso dal precedente o è passato più di 1 secondo
+                            if line.strip() != last_message or (current_time - last_message_time) >= 1:
+                                info_log.write(f"{now()}: {line.strip()}\n")
+                                last_message = line.strip()
+                                last_message_time = current_time
+
+                    # Check for error conditions
                     if "error" in line.lower():
                         error_log.write(f"{now()}: Navigation Error - {line.strip()}\n")
                     if "abort" in line.lower():
                         error_log.write(f"{now()}: Navigation Aborted - {line.strip()}\n")
-                    if "stuck" in line.lower():
-                        error_log.write(f"{now()}: Robot Stuck - {line.strip()}\n")
                     if "timeout" in line.lower():
                         error_log.write(f"{now()}: Operation Timeout - {line.strip()}\n")
-                        
+                    if "recovery" in line.lower():
+                        error_log.write(f"{now()}: Recovery Action - {line.strip()}\n")
+                        print("starting recovery behavior")
+
                     if "final goal" in line.lower():
                         logfile.write(f"{now()}: Finished waypoint navigation.\n")
                         break
@@ -341,4 +408,3 @@ if __name__ == "__main__":
         sleep(3)
         main(cmd_args)
         roscore_process.kill()
-
