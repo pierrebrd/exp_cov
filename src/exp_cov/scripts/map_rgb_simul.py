@@ -9,9 +9,55 @@ import secrets
 import rospkg
 import argparse
 
+"""
+Script per la generazione automatica di mappe da una mappa di base in formato RGB.
+Gestisce la traslazione casuale di oggetti all'interno di aree definite e la generazione 
+di file di configurazione per Stage.
+
+Gli oggetti sono codificati per colore:
+- ROSSO: oggetti semi-statici che possono essere traslati e ruotati liberamente
+- VERDE: aree di disturbo che possono essere solo traslate 
+- BLU: oggetti di clutter che possono essere rimossi con probabilità CLUTTER_PROB
+- ARANCIONE/VIOLA: porte che possono essere aperte/chiuse con probabilità DOOR_PROB
+- GIALLO: aree di movimento consentito per gli oggetti
+
+Il processo include:
+1. Estrazione degli oggetti colorati dalla mappa base
+2. Traslazione/rotazione degli oggetti secondo distribuzioni normali
+3. Generazione della mappa finale e del file world per Stage
+"""
+
+# Costanti per le distribuzioni di probabilità
+MEAN_TRA = 0       # Media della distribuzione traslazionale per oggetti rossi/blu
+STD_TRA = 10       # Deviazione standard della distribuzione traslazionale per oggetti rossi/blu
+MEAN_GREEN = 0     # Media della distribuzione traslazionale per aree verdi  
+STD_GREEN = 0.1    # Deviazione standard della distribuzione traslazionale per aree verdi
+MEAN_ROT = 0       # Media della distribuzione rotazionale
+STD_ROT = 20       # Deviazione standard della distribuzione rotazionale
+DOOR_PROB = 0.05   # Probabilità che una porta sia chiusa (arancione vs viola)
+CLUTTER_PROB = 0.5 # Probabilità che un oggetto di clutter (blu) sia mantenuto
+
 # obj_img is a b&w image, in which the object is black and the background white
 # img is the b&w image in which we translate obj_img
 def translate_obj(obj_img, movement_area, img, dist_tra, dist_rot, show_steps, disable_rotation, rng):
+    """
+    Trasla e opzionalmente ruota un oggetto all'interno di un'area di movimento consentita.
+    
+    Args:
+        obj_img: Immagine binaria dell'oggetto (nero su sfondo bianco)
+        movement_area: Maschera dell'area di movimento consentita
+        img: Immagine della mappa in cui inserire l'oggetto
+        dist_tra: Distribuzione per la traslazione
+        dist_rot: Distribuzione per la rotazione
+        show_steps: Flag per visualizzare i passaggi intermedi
+        disable_rotation: Flag per disabilitare la rotazione
+        rng: Generatore di numeri casuali
+        
+    Returns:
+        Tupla (dst, dx, dy) dove:
+        - dst: Immagine risultante dopo la traslazione
+        - dx, dy: Spostamento effettivo applicato
+    """
     obj_img = cv2.bitwise_not(obj_img)
     movement_area = cv2.cvtColor(movement_area, cv2.COLOR_BGR2RGB)
     height, width = obj_img.shape[:2]
@@ -85,6 +131,30 @@ def translate_obj(obj_img, movement_area, img, dist_tra, dist_rot, show_steps, d
 
 
 def extract_color_pixels(image, movement_mask_image, rectangles_path, show_recap=False, show_steps=False, save_map=False, sizex=20, sizey=20, silent=False, seed=None):
+    """
+    Estrae e processa gli oggetti colorati dalla mappa.
+    
+    Il processo include:
+    1. Conversione in spazio colore HSV per l'identificazione degli oggetti
+    2. Creazione di maschere per ogni tipo di oggetto
+    3. Gestione delle porte (aperte/chiuse)
+    4. Traslazione degli oggetti secondo le regole specifiche per colore
+    5. Generazione delle informazioni sui rettangoli per Stage
+    
+    Args:
+        image: Mappa RGB originale
+        movement_mask_image: Maschera delle aree di movimento (giallo)
+        rectangles_path: Percorso per salvare le info sui rettangoli
+        show_recap: Flag per mostrare il riepilogo finale
+        show_steps: Flag per mostrare i passaggi intermedi
+        save_map: Flag per salvare la mappa risultante
+        sizex, sizey: Dimensioni in metri della mappa
+        silent: Flag per sopprimere i messaggi
+        seed: Seed per la generazione casuale
+        
+    Returns:
+        Immagine risultante dopo tutte le modifiche
+    """
     image_objects_removed = image.copy()
     
     # Convert RGB image to HSV (Hue, Saturation, Value) color space
@@ -126,7 +196,6 @@ def extract_color_pixels(image, movement_mask_image, rectangles_path, show_recap
     closed_doors = cv2.findContours(closed_doors_mask_dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
 
     # Probability for orange/purple doors (0.05 prob to have a close door -> 0.95 of having it open)
-    DOOR_PROB = 0.05
     bernoulli_doors = st.bernoulli(DOOR_PROB)
 
     # Manage the rng seeding
@@ -232,22 +301,15 @@ def extract_color_pixels(image, movement_mask_image, rectangles_path, show_recap
                 break
 
     # Translational probability red and blue obstacles
-    MEAN_TRA = 0
-    STD_TRA = 10
     norm_tra = st.norm(loc=MEAN_TRA, scale=STD_TRA)
 
     # Translational probability green areas
-    MEAN_GREEN = 0
-    STD_GREEN = 0.1
     norm_green = st.norm(loc=MEAN_GREEN, scale=STD_GREEN)
 
     # Rotational probability
-    MEAN_ROT = 0
-    STD_ROT = 20
     norm_rot = st.norm(loc=MEAN_ROT, scale=STD_ROT)
 
     # Probability for blue objects appearance
-    CLUTTER_PROB = 0.5
     bernoulli_clutter = st.bernoulli(CLUTTER_PROB)
 
     rectangles_info = []

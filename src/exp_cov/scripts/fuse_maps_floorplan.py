@@ -4,7 +4,30 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
+"""
+Script per la fusione di mappe e generazione di floorplan.
+Gestisce la combinazione di multiple mappe esplorate e la creazione di una mappa probabilistica.
+
+Il processo include:
+1. Caricamento e preprocessing delle mappe
+2. Fusione probabilistica delle celle
+3. Generazione di una mappa finale con costi
+4. Riempimento di eventuali buchi nella mappa
+"""
+
 def check_positive(value):
+    """
+    Valida che un valore sia un intero positivo.
+    
+    Args:
+        value: Valore da controllare
+        
+    Returns:
+        int: Il valore convertito in intero positivo
+        
+    Raises:
+        Exception: Se il valore non è un intero positivo
+    """
     try:
         value = int(value)
         if value <= 0:
@@ -14,6 +37,12 @@ def check_positive(value):
     return value
 
 def parse_args():
+    """
+    Configura e gestisce il parsing degli argomenti da linea di comando.
+    
+    Returns:
+        Namespace: Gli argomenti parsati
+    """
     parser = argparse.ArgumentParser(description='Merge maps automatically.')
     parser.add_argument("-d", '--dir', default=os.getcwd(),
         help="Base directory to read maps from.")
@@ -28,15 +57,46 @@ def parse_args():
     return parser.parse_args()
 
 def addimage(image, addition):
+    """
+    Combina due immagini tramite operazioni logiche.
+    
+    Args:
+        image: Immagine base
+        addition: Immagine da aggiungere
+        
+    Returns:
+        ndarray: L'immagine risultante dalla combinazione
+    """
     if addition is None:
         return image
 
     return  image + addition
 
 def probabilize(image, num):
+    """
+    Converte una mappa in una rappresentazione probabilistica.
+    
+    Args:
+        image: Mappa da convertire
+        num: Numero di mappe utilizzate
+        
+    Returns:
+        ndarray: Mappa probabilistica risultante
+    """
     return image / num
 
 def cost_update(floorplan, image, costs):
+    """
+    Aggiorna i costi della mappa in base a una nuova immagine.
+    
+    Args:
+        floorplan: Mappa dei costi corrente
+        image: Nuova immagine da incorporare
+        costs: Matrice dei costi
+        
+    Returns:
+        ndarray: Mappa dei costi aggiornata
+    """
     HISTORICAL_WEIGHT = 0.8
     NEW_WEIGHT = 1 - HISTORICAL_WEIGHT
     height, width = floorplan.shape
@@ -47,6 +107,15 @@ def cost_update(floorplan, image, costs):
     return costs
 
 def cost_initialize(floorplan):
+    """
+    Inizializza la matrice dei costi per una mappa.
+    
+    Args:
+        floorplan: Mappa di base
+        
+    Returns:
+        ndarray: Matrice dei costi inizializzata
+    """
     costs = np.zeros_like(floorplan, dtype=float)
     height, width = floorplan.shape
     for h in range(height):
@@ -62,6 +131,15 @@ def cost_initialize(floorplan):
     return costs
 
 def fill_holes(image):
+    """
+    Riempie i buchi nella mappa usando operazioni morfologiche.
+    
+    Args:
+        image: Mappa con possibili buchi
+        
+    Returns:
+        ndarray: Mappa con i buchi riempiti
+    """
     contours, _ = cv2.findContours(image, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
     if len(contours) > 0:
         max_contour = max(contours, key = lambda cnt: cv2.contourArea(cnt))
@@ -71,6 +149,17 @@ def fill_holes(image):
     return image
 
 def init_floorplan(image, max_height, max_width):
+    """
+    Inizializza una nuova mappa con dimensioni specificate.
+    
+    Args:
+        image: Immagine di base
+        max_height: Altezza massima
+        max_width: Larghezza massima
+        
+    Returns:
+        ndarray: Nuova mappa inizializzata
+    """
     floorplan = np.zeros((max_height, max_width), dtype=np.uint8)
     points = (max_width, max_height)
     image = cv2.resize(image, points, interpolation= cv2.INTER_NEAREST)
@@ -79,6 +168,16 @@ def init_floorplan(image, max_height, max_width):
     return cv2.bitwise_or(floorplan, image)
 
 def update_floorplan(floorplan, image):
+    """
+    Aggiorna una mappa esistente con nuove informazioni.
+    
+    Args:
+        floorplan: Mappa esistente
+        image: Nuova immagine da incorporare
+        
+    Returns:
+        ndarray: Mappa aggiornata
+    """
     max_height, max_width = floorplan.shape
     points = (max_width, max_height)
 
