@@ -236,41 +236,54 @@ def extract_color_pixels(image, movement_mask_image, rectangles_path, show_recap
     STD_TRA = 10
     norm_tra = st.norm(loc=MEAN_TRA, scale=STD_TRA)
 
-    # Translational probability green areas
-    MEAN_GREEN = 0
-    STD_GREEN = 0.1
+    # Parametri per la distribuzione normale che controlla lo spostamento delle aree verdi
+    # Media 0 e deviazione standard 0.1 per movimenti molto limitati
+    MEAN_GREEN = 0  # Media della distribuzione (nessuno spostamento medio)  
+    STD_GREEN = 0.1 # Deviazione standard piccola per limitare gli spostamenti
     norm_green = st.norm(loc=MEAN_GREEN, scale=STD_GREEN)
 
-    # Rotational probability
-    MEAN_ROT = 0
-    STD_ROT = 20
+    # Parametri per la distribuzione normale che controlla le rotazioni degli oggetti
+    # Media 0 e deviazione standard 20 gradi per rotazioni moderate
+    MEAN_ROT = 0    # Media della distribuzione (nessuna rotazione media)
+    STD_ROT = 20    # Deviazione standard di 20 gradi
     norm_rot = st.norm(loc=MEAN_ROT, scale=STD_ROT)
 
-    # Probability for blue objects appearance
+    # Probabilità di comparsa degli oggetti blu (clutter)
+    # 50% di probabilità che un oggetto blu appaia nella scena
     CLUTTER_PROB = 0.5
     bernoulli_clutter = st.bernoulli(CLUTTER_PROB)
 
+    # Lista per memorizzare le informazioni sui rettangoli che descrivono le aree verdi
     rectangles_info = []
+
+    # Crea una copia della lista dei contorni verdi per poterli modificare
     contours_green_translated = list(contours[colors.index(GREEN)])
-    green_idx = 0
+    green_idx = 0 # Indice per tenere traccia dell'area verde corrente
+
+    # Ottiene dimensioni dell'immagine per le successive trasformazioni di coordinate
     image_width = image.shape[1]
     image_height = image.shape[0]
-    size_width = sizey
-    size_height = sizex
+    size_width = sizey   # Dimensione della mappa in metri (larghezza)
+    size_height = sizex  # Dimensione della mappa in metri (altezza)
 
+    # Itera su tutti gli oggetti trovati nell'immagine
     for j, (contour, obj_color_idx, object_image, movement_area) in enumerate(contour_obj_image_movement_area):
         if colors[obj_color_idx] == GREEN:
-            # Get dx and dy translation so that at least 80% does not overlap
-            _, dx, dy = translate_obj(object_image, movement_area, translated_objs_image, dist_tra=norm_green, dist_rot=norm_rot, show_steps=show_steps, disable_rotation=True, rng=rng)
+            # Per le aree verdi, applica una traslazione limitata senza rotazione
+            # translate_obj restituisce anche dx e dy dello spostamento effettuato
+            _, dx, dy = translate_obj(object_image, movement_area, translated_objs_image, 
+                                    dist_tra=norm_green, dist_rot=norm_rot, 
+                                    show_steps=show_steps, disable_rotation=True, rng=rng)
 
+            # Aggiorna le coordinate del contorno verde con la traslazione effettuata
             for r in range(4):
                 contours_green_translated[green_idx][r][0][0] += dx
                 contours_green_translated[green_idx][r][0][1] += dy
 
-            # Calculate the bounding rectangle
+            # Calcola il rettangolo che racchiude il contorno
             x, y, w, h = cv2.boundingRect(contour)
             
-            # Translate it 
+            # Applica la traslazione alle coordinate del rettangolo
             x = x + dx 
             y = y + dy
 
@@ -519,45 +532,49 @@ def get_non_existent_filename(base_dir, no_timestamp):
     return filename
 
 def main():
-
+    # Analizza gli argomenti da linea di comando
     args = parse_args()
-    image_path = args.map
-    show_recap = args.show
-    show_steps = args.steps
-    save_map = args.save
-    batch = args.batch
-    no_timestamp = args.no_timestamp
-    base_dir = args.dir
-    movement_mask_image_path = args.mask
-    worlds = args.worlds
-    speedup = args.speedup
-    pose = args.pose
-    scale = args.scale
-    world_num = args.world_num
-    silent = args.silent
-    seed = args.seed
+    image_path = args.map                          # Percorso dell'immagine RGB di input
+    show_recap = args.show                         # Flag per mostrare un riepilogo finale
+    show_steps = args.steps                        # Flag per mostrare i passaggi intermedi
+    save_map = args.save                          # Flag per salvare la mappa modificata
+    batch = args.batch                            # Numero di mappe da generare in batch
+    no_timestamp = args.no_timestamp              # Flag per salvare senza timestamp
+    base_dir = args.dir                           # Directory base per il salvataggio
+    movement_mask_image_path = args.mask          # Percorso della maschera delle aree di movimento
+    worlds = args.worlds                          # Numero di mondi da generare
+    speedup = args.speedup                        # Fattore di accelerazione simulazione
+    pose = args.pose                             # Posizione iniziale del robot (x,y)
+    scale = args.scale                           # Scala in metri/pixel
+    world_num = args.world_num                    # Numero specifico del mondo da generare
+    silent = args.silent                         # Flag per sopprimere i messaggi
+    seed = args.seed                             # Seed per la generazione random
 
-
+    # Carica le immagini di input
     movement_mask_image = cv2.imread(movement_mask_image_path, cv2.IMREAD_COLOR)
-        
     image = cv2.imread(image_path, cv2.IMREAD_COLOR)
 
+    # Calcola le dimensioni della mappa in metri
     sizex = image.shape[0]
     sizex = sizex/(1/scale)
-    sizey = image.shape[1]
+    sizey = image.shape[1] 
     sizey = sizey/(1/scale)
 
+    # Gestisce i diversi casi di generazione mappe
     if worlds == 0 and world_num is None:
         if batch == 1:
+            # Caso singola mappa
             rectangles_path = os.path.join(base_dir, "rectangles.json") if no_timestamp else os.path.join(base_dir, f"rectangles_{time.time_ns()}.json")
             image_modified = extract_color_pixels(image, movement_mask_image, rectangles_path, show_recap=show_recap, show_steps=show_steps, save_map=save_map, sizex=sizex, sizey=sizey, silent=silent, seed=seed)
 
+            # Salva la mappa modificata se richiesto
             if save_map:
                 filename = get_non_existent_filename(base_dir, no_timestamp)                
                 cv2.imwrite(filename, image_modified)
                 if not silent:
                     print(f"Saved map as {filename}")
         else:
+            # Caso batch di mappe
             for i in range(batch):
                 rectangles_path = os.path.join(base_dir, f"rectangles_{i}.json")
                 image_modified = extract_color_pixels(image, movement_mask_image, rectangles_path, show_recap=show_recap, show_steps=show_steps, save_map=True, sizex=sizex, sizey=sizey, silent=silent, seed=seed)
@@ -566,22 +583,36 @@ def main():
                 if not silent:
                     print(f"Saved map as {filename}")
     else:
+        # Caso generazione mondi per Stage
         world_range = None
         if world_num is not None:
-            world_range = [world_num]
+            world_range = [world_num]     # Genera un mondo specifico
         else:
-            world_range = range(0, worlds)
+            world_range = range(0, worlds) # Genera una serie di mondi
+
+        # Ottiene il nome base della mappa
         name = os.path.basename(os.path.splitext(image_path)[0])
+
+        # Genera ogni mondo richiesto
         for i in world_range:
+            # Crea i percorsi per i file di output
             rectangles_path = os.path.join(base_dir, f"bitmaps/rectangles{i}.json")
             bitmaps_dir = os.path.join(base_dir, "bitmaps")
+            
+            # Crea la directory bitmaps se non esiste
             if not os.path.exists(bitmaps_dir) or not os.path.isdir(bitmaps_dir):
                 os.makedirs(bitmaps_dir)
+
+            # Genera la mappa modificata
             image_modified = extract_color_pixels(image, movement_mask_image, rectangles_path, show_recap=show_recap, show_steps=show_steps, save_map=True, sizex=sizex, sizey=sizey, silent=silent, seed=seed)
+            
+            # Salva la mappa modificata
             filename = os.path.join(base_dir, f"bitmaps/image{i}.png")
             cv2.imwrite(filename, image_modified)
             if not silent:
                     print(f"Saved map as {filename}")
+
+            # Crea e salva il file .world per Stage
             worldfile_path = os.path.join(base_dir, f"world{i}.world")
             with open(worldfile_path, "w", encoding="utf-8") as worldfile:
                 worldfile.write(get_world_text(i, name, speedup, pose, scale, sizex, sizey))
