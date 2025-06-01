@@ -240,43 +240,62 @@ def extract_color_pixels(image, movement_mask_image, rectangles_path, show_recap
 
     translated_objs_image = image_objects_removed
     
-    # For each closed door (state 3), check for overlapping states and randomly select one
-    for closed_door in door_contours[3]:  # index 3 = ORANGE = closed state
-        matching_states = []
-        # Check other states (open=0, 2/3 open=1, 2/3 closed=2) for matching doors
-        for state in range(3):
-            for other_door in door_contours[state]:
-                mask_other = np.zeros_like(hsv)
-                cv2.drawContours(mask_other, [other_door], -1, (255,255,255), cv2.FILLED)
-                mask_closed = np.zeros_like(hsv)
-                cv2.drawContours(mask_closed, [closed_door], -1, (255,255,255), cv2.FILLED)
-                overlapped = cv2.bitwise_and(mask_other, mask_closed)
-                overlap = np.count_nonzero(overlapped)
-                if overlap > 0:
-                    matching_states.append((state, other_door))
-                    
-        if matching_states:
-            # Choose random state based on defined probabilities
-            state = door_state.rvs(random_state=rng)
-            mask_chosen = np.zeros_like(hsv)
+    # Create door groups by finding all overlapping doors, starting from open doors
+    door_groups = []
+    processed_doors = set()
+    
+    # Helper function to find all overlapping doors starting from an open door
+    def get_door_group(open_door):
+        # Check if door already processed
+        door_id = id(open_door)
+        if door_id in processed_doors:
+            return None
             
-            if state == 0:  # Open
-                door = next((d for s,d in matching_states if s == 0), None)
-                if door is not None:
-                    cv2.drawContours(mask_chosen, [door], -1, (255,255,255), cv2.FILLED)
-            elif state == 1:  # 2/3 open
-                door = next((d for s,d in matching_states if s == 1), None)
-                if door is not None:
-                    cv2.drawContours(mask_chosen, [door], -1, (255,255,255), cv2.FILLED)
-            elif state == 2:  # 2/3 closed
-                door = next((d for s,d in matching_states if s == 2), None)
-                if door is not None:
-                    cv2.drawContours(mask_chosen, [door], -1, (255,255,255), cv2.FILLED)
-            else:  # Closed
-                cv2.drawContours(mask_chosen, [closed_door], -1, (255,255,255), cv2.FILLED)
-                
-            mask_eroded = cv2.erode(mask_chosen, kernel, iterations=1)
-            translated_objs_image = cv2.bitwise_and(translated_objs_image, cv2.bitwise_not(mask_eroded))
+        # Start group with open door
+        group = [(open_door, 0)]  # state 0 = open
+        processed_doors.add(door_id)
+        
+        # Create mask for open door
+        mask_open = np.zeros_like(hsv[:,:,0])
+        cv2.drawContours(mask_open, [open_door], -1, 1, cv2.FILLED)
+        
+        # Find matching doors in other states
+        for state in range(1, len(door_colors)):  # Check states 1-3
+            for door in door_contours[state]:
+                door_id = id(door)
+                if door_id in processed_doors:
+                    continue
+                    
+                # Check if this door overlaps with open door
+                mask_check = np.zeros_like(hsv[:,:,0])
+                cv2.drawContours(mask_check, [door], -1, 1, cv2.FILLED)
+                if np.any(cv2.bitwise_and(mask_open, mask_check)):
+                    processed_doors.add(door_id)
+                    group.append((door, state))
+        
+        # Only return group if it contains a door for each state
+        return group if len(group) == len(door_colors) else None
+
+    # Find all door groups starting from open doors
+    for open_door in door_contours[0]:  # index 0 = open state
+        group = get_door_group(open_door)
+        if group:
+            door_groups.append(group)
+    
+    # Process each door group
+    for group in door_groups:
+        # Choose random state using door_state RV
+        chosen_state = door_state.rvs(random_state=rng)
+        
+        # Get door for chosen state (we know each group has all states)
+        chosen_door = next(door for door, state in group if state == chosen_state)
+        print(f"Chosen door state: {door_colors[chosen_state]}")
+            
+        # Draw the chosen door
+        mask_chosen = np.zeros_like(hsv)
+        cv2.drawContours(mask_chosen, [chosen_door], -1, (255,255,255), cv2.FILLED)
+        mask_eroded = cv2.erode(mask_chosen, kernel, iterations=1)
+        translated_objs_image = cv2.bitwise_and(translated_objs_image, cv2.bitwise_not(mask_eroded))
 
     # Translational probability red and blue obstacles
     MEAN_TRA = 0
