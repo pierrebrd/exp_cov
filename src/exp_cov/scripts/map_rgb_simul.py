@@ -108,39 +108,62 @@ def extract_color_pixels(image, movement_mask_image, rectangles_path, show_recap
     # Find contours in the mask
     contours_movement = cv2.findContours(color_mask_movement, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
 
-    # HSV ranges for closed doors (orange) and open doors (purple)
-    ORANGE = "orange"
-    PURPLE = "purple"
-    door_colors = (ORANGE, PURPLE) 
-    lower_door_range = (np.array([10, 100, 100]), np.array([130, 50, 50]))
-    upper_door_range = (np.array([20, 255, 255]), np.array([160, 255, 255]))
+    # HSV ranges for doors: open (purple), 2/3 open (yellow), 2/3 closed (light orange), closed (orange)
+    PURPLE = "purple"  # open - 8a00ff
+    YELLOW = "yellow"  # 2/3 open - ffff00
+    LIGHT_ORANGE = "light_orange"  # 2/3 closed - ffbf00
+    ORANGE = "orange"  # closed - ff7f00
+    
+    door_colors = (PURPLE, YELLOW, LIGHT_ORANGE, ORANGE)
+    lower_door_range = (
+        np.array([130, 50, 50]),   # purple
+        np.array([20, 100, 100]),  # yellow
+        np.array([15, 100, 100]),  # light orange
+        np.array([10, 100, 100])   # orange
+    )
+    upper_door_range = (
+        np.array([160, 255, 255]), # purple
+        np.array([40, 255, 255]),  # yellow
+        np.array([25, 255, 255]),  # light orange 
+        np.array([20, 255, 255])   # orange
+    )
 
     # To work with doors
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    closed_doors_mask = cv2.inRange(hsv, lower_door_range[door_colors.index(ORANGE)], upper_door_range[door_colors.index(ORANGE)])
-    closed_doors_mask_dilated = cv2.dilate(closed_doors_mask, kernel, iterations=1)
-    open_doors_mask = cv2.inRange(hsv, lower_door_range[door_colors.index(PURPLE)], upper_door_range[door_colors.index(PURPLE)])
-    open_doors_mask_dilated = cv2.dilate(open_doors_mask, kernel, iterations=1)
+    
+    # Create masks for each door state
+    door_masks = []
+    door_masks_dilated = []
+    door_contours = []
+    
+    for i in range(len(door_colors)):
+        mask = cv2.inRange(hsv, lower_door_range[i], upper_door_range[i])
+        mask_dilated = cv2.dilate(mask, kernel, iterations=1)
+        contours = cv2.findContours(mask_dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+        door_masks.append(mask)
+        door_masks_dilated.append(mask_dilated)
+        door_contours.append(contours)
 
-    open_doors = cv2.findContours(open_doors_mask_dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
-    closed_doors = cv2.findContours(closed_doors_mask_dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
-
-    # Probability for orange/purple doors (0.05 prob to have a close door -> 0.95 of having it open)
-    DOOR_PROB = 0.05
-    bernoulli_doors = st.bernoulli(DOOR_PROB)
+    # Door state probabilities [open, 2/3 open, 2/3 closed, closed]
+    DOOR_PROBS = [0.3, 0.2, 0.2, 0.3]
+    door_state = st.rv_discrete(values=(range(len(DOOR_PROBS)), DOOR_PROBS))
 
     # Manage the rng seeding
     seed = secrets.randbits(128) if not seed else seed 
     print(seed) # TODO: remove this print and save this value some other way
     rng = np.random.default_rng(seed)
 
+    # Set door states and clean masks
     hsv = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
-    image_objects_removed[np.where(closed_doors_mask > np.array(0))] = [255, 255, 255]
-    hsv[np.where(closed_doors_mask > np.array(0))] = [255, 255, 255]
-    image_objects_removed[np.where(open_doors_mask > np.array(0))] = [255, 255, 255]
-    hsv[np.where(open_doors_mask > np.array(0))] = [255, 255, 255]
+    
+    # Clear all door pixels from original image 
+    for i in range(len(door_colors)):
+        mask = door_masks[i]
+        image_objects_removed[np.where(mask > np.array(0))] = [255, 255, 255]
+        hsv[np.where(mask > np.array(0))] = [255, 255, 255]
+    
     hsv = cv2.cvtColor(hsv, cv2.COLOR_BGR2HSV)
-
+    
     color_masks = []
     images_with_boxes = []
     results = []
@@ -217,19 +240,43 @@ def extract_color_pixels(image, movement_mask_image, rectangles_path, show_recap
 
     translated_objs_image = image_objects_removed
     
-    # For each door, we either keep it closed or open, by associating closed and open configs for each door, assuming they as adjacent
-    for closed_door in closed_doors:
-        for open_door in open_doors:
-            mask_open = np.zeros_like(hsv)
-            cv2.drawContours(mask_open, [open_door], -1, (255,255,255), cv2.FILLED)
-            mask_closed = np.zeros_like(hsv)
-            cv2.drawContours(mask_closed, [closed_door], -1, (255,255,255), cv2.FILLED)
-            overlapped = cv2.bitwise_and(mask_open, mask_closed)
-            overlap = np.count_nonzero(overlapped)
-            if overlap > 0:
-                mask_eroded = cv2.erode(mask_closed, kernel, iterations=1) if bernoulli_doors.rvs(random_state=rng) else cv2.erode(mask_open, kernel, iterations=1)
-                translated_objs_image = cv2.bitwise_and(translated_objs_image, cv2.bitwise_not(mask_eroded))
-                break
+    # For each closed door (state 3), check for overlapping states and randomly select one
+    for closed_door in door_contours[3]:  # index 3 = ORANGE = closed state
+        matching_states = []
+        # Check other states (open=0, 2/3 open=1, 2/3 closed=2) for matching doors
+        for state in range(3):
+            for other_door in door_contours[state]:
+                mask_other = np.zeros_like(hsv)
+                cv2.drawContours(mask_other, [other_door], -1, (255,255,255), cv2.FILLED)
+                mask_closed = np.zeros_like(hsv)
+                cv2.drawContours(mask_closed, [closed_door], -1, (255,255,255), cv2.FILLED)
+                overlapped = cv2.bitwise_and(mask_other, mask_closed)
+                overlap = np.count_nonzero(overlapped)
+                if overlap > 0:
+                    matching_states.append((state, other_door))
+                    
+        if matching_states:
+            # Choose random state based on defined probabilities
+            state = door_state.rvs(random_state=rng)
+            mask_chosen = np.zeros_like(hsv)
+            
+            if state == 0:  # Open
+                door = next((d for s,d in matching_states if s == 0), None)
+                if door is not None:
+                    cv2.drawContours(mask_chosen, [door], -1, (255,255,255), cv2.FILLED)
+            elif state == 1:  # 2/3 open
+                door = next((d for s,d in matching_states if s == 1), None)
+                if door is not None:
+                    cv2.drawContours(mask_chosen, [door], -1, (255,255,255), cv2.FILLED)
+            elif state == 2:  # 2/3 closed
+                door = next((d for s,d in matching_states if s == 2), None)
+                if door is not None:
+                    cv2.drawContours(mask_chosen, [door], -1, (255,255,255), cv2.FILLED)
+            else:  # Closed
+                cv2.drawContours(mask_chosen, [closed_door], -1, (255,255,255), cv2.FILLED)
+                
+            mask_eroded = cv2.erode(mask_chosen, kernel, iterations=1)
+            translated_objs_image = cv2.bitwise_and(translated_objs_image, cv2.bitwise_not(mask_eroded))
 
     # Translational probability red and blue obstacles
     MEAN_TRA = 0
