@@ -37,12 +37,12 @@ STATI DELLE PORTE
 1. Porta Aperta (Viola)
 ----------------------
 Rappresentazione: Porta completamente aperta
-Range HSV: [150-155, 100-255, 100-255]
-Range RGB: [138,0,255] - [153,51,255]
+Range HSV: [300-305, 100-255, 100-255]
+Range RGB: [255,0,255] - [255,51,255]
 Valore consigliato:
-- RGB: (138,0,255)
-- HSV: (150,255,255)
-- HEX: #8A00FF
+- RGB: (255,0,255)
+- HSV: (300,255,255)
+- HEX: #FF00FF
 
 2. Porta 2/3 Aperta (Giallo)
 ---------------------------
@@ -57,22 +57,23 @@ Valore consigliato:
 3. Porta 2/3 Chiusa (Arancione Chiaro)
 -------------------------------------
 Rappresentazione: Porta chiusa per due terzi
-Range HSV: [17-22, 100-255, 100-255]
-Range RGB: [255,191,0] - [255,204,51]
+Range HSV: [30-40, 100-255, 100-255]
+Range RGB: [255,165,0] - [255,191,51]
 Valore consigliato:
-- RGB: (255,191,0)
-- HSV: (17,255,255)
-- HEX: #FFBF00
+- RGB: (255,165,0)
+- HSV: (33,255,255)
+- HEX: #FFA500
 
 4. Porta Chiusa (Arancione)
 --------------------------
 Rappresentazione: Porta completamente chiusa
 Range HSV: [10-15, 100-255, 100-255]
-Range RGB: [255,127,0] - [255,153,51]
+Range RGB: [255,128,0] - [255,153,51]
 Valore consigliato:
-- RGB: (255,127,0)
+- RGB: (255,128,0)
 - HSV: (10,255,255)
-- HEX: #FF7F00
+- HEX: #FF8000
+
 
 AREE MOVIMENTO
 =============
