@@ -97,8 +97,16 @@ def extract_color_pixels(image, movement_mask_image, rectangles_path, show_recap
     GREEN = "green"
     BLUE = "blue"
     colors = (RED, GREEN, BLUE)
-    lower_ranges = (np.array([0, 100, 100]), np.array([40, 40, 40]), np.array([100, 50, 50]))
-    upper_ranges = (np.array([10, 255, 255]), np.array([80, 255, 255]), np.array([140, 255, 255]))
+    lower_ranges = (
+        np.array([0, 100, 100]),      # red
+        np.array([60, 100, 100]),     # green (era 120)
+        np.array([120, 100, 100])     # blue (era 240)
+    )
+    upper_ranges = (
+        np.array([5, 255, 255]),      # red (era 10)
+        np.array([65, 255, 255]),     # green (era 130)
+        np.array([125, 255, 255])     # blue (era 250)
+    )
 
     #movement_color = ("yellow")
     lower_ranges_movement = np.array([20, 100, 100])
@@ -116,16 +124,16 @@ def extract_color_pixels(image, movement_mask_image, rectangles_path, show_recap
     
     door_colors = (PURPLE, YELLOW, LIGHT_ORANGE, ORANGE)
     lower_door_range = (
-        np.array([130, 50, 50]),   # purple
-        np.array([20, 100, 100]),  # yellow
-        np.array([15, 100, 100]),  # light orange
-        np.array([10, 100, 100])   # orange
+        np.array([150, 100, 100]),    # purple/open (era 300)
+        np.array([25, 100, 100]),     # yellow/2/3 open (era 50)
+        np.array([17, 100, 100]),     # light orange/2/3 closed (era 35)
+        np.array([10, 100, 100])      # orange/closed (era 20)
     )
     upper_door_range = (
-        np.array([160, 255, 255]), # purple
-        np.array([40, 255, 255]),  # yellow
-        np.array([25, 255, 255]),  # light orange 
-        np.array([20, 255, 255])   # orange
+        np.array([155, 255, 255]),    # purple (era 310)
+        np.array([30, 255, 255]),     # yellow (era 60)
+        np.array([22, 255, 255]),     # light orange (era 45)
+        np.array([15, 255, 255])      # orange (era 30)
     )
 
     # To work with doors
@@ -140,6 +148,7 @@ def extract_color_pixels(image, movement_mask_image, rectangles_path, show_recap
         mask = cv2.inRange(hsv, lower_door_range[i], upper_door_range[i])
         mask_dilated = cv2.dilate(mask, kernel, iterations=1)
         contours = cv2.findContours(mask_dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+
         door_masks.append(mask)
         door_masks_dilated.append(mask_dilated)
         door_contours.append(contours)
