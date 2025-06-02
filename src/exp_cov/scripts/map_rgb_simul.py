@@ -1,3 +1,4 @@
+# Import necessari per l'elaborazione delle immagini e gestione dati
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,8 +10,18 @@ import secrets
 import rospkg
 import argparse
 
-# obj_img is a b&w image, in which the object is black and the background white
-# img is the b&w image in which we translate obj_img
+"""
+Trasla e ruota un oggetto all'interno di un'area di movimento specificata.
+@param obj_img: Immagine B/N con oggetto nero su sfondo bianco
+@param movement_area: Area consentita per il movimento
+@param img: Immagine B/N target per la traslazione
+@param dist_tra: Distribuzione per la traslazione
+@param dist_rot: Distribuzione per la rotazione
+@param show_steps: Mostra passaggi intermedi
+@param disable_rotation: Disabilita rotazione
+@param rng: Generatore numeri casuali
+@return: (immagine traslata, dx, dy)
+"""
 def translate_obj(obj_img, movement_area, img, dist_tra, dist_rot, show_steps, disable_rotation, rng):
     obj_img = cv2.bitwise_not(obj_img)
     movement_area = cv2.cvtColor(movement_area, cv2.COLOR_BGR2RGB)
@@ -84,6 +95,21 @@ def translate_obj(obj_img, movement_area, img, dist_tra, dist_rot, show_steps, d
     return (dst, dx, dy)
 
 
+"""
+Estrae e processa oggetti colorati da una mappa RGB.
+Gestisce porte in diversi stati e oggetti con aree di movimento limitate.
+@param image: Immagine RGB input
+@param movement_mask_image: Maschera aree movimento
+@param rectangles_path: Percorso file JSON rettangoli
+@param show_recap: Mostra riepilogo finale
+@param show_steps: Mostra passaggi elaborazione
+@param save_map: Salva mappa modificata
+@param sizex: Larghezza mappa in metri
+@param sizey: Altezza mappa in metri  
+@param silent: Sopprime messaggi output
+@param seed: Seed generatore casuale
+@return: Immagine con oggetti traslati
+"""
 def extract_color_pixels(image, movement_mask_image, rectangles_path, show_recap=False, show_steps=False, save_map=False, sizex=20, sizey=20, silent=False, seed=None):
     image_objects_removed = image.copy()
     
@@ -418,6 +444,12 @@ def extract_color_pixels(image, movement_mask_image, rectangles_path, show_recap
 
     return translated_objs_image
 
+"""
+Valida input intero positivo.
+@param value: Valore da controllare
+@return: Intero positivo validato
+@raises: Exception se valore non valido
+"""
 def check_positive(value):
     try:
         value = int(value)
@@ -427,6 +459,12 @@ def check_positive(value):
         raise Exception(f"{value} is not an integer")
     return value
 
+"""
+Valida input float positivo.
+@param value: Valore da controllare
+@return: Float positivo validato
+@raises: Exception se valore non valido
+"""
 def check_positive_float(value):
     try:
         value = float(value)
@@ -436,6 +474,12 @@ def check_positive_float(value):
         raise Exception(f"{value} is not a float")
     return value
 
+"""
+Valida input intero non negativo.
+@param value: Valore da controllare
+@return: Intero non negativo validato 
+@raises: Exception se valore non valido
+"""
 def check_positive_or_zero(value):
     try:
         value = int(value)
@@ -445,6 +489,12 @@ def check_positive_or_zero(value):
         raise Exception(f"{value} is not an integer")
     return value
 
+"""
+Valida formato posa (x y).
+@param value: Stringa da controllare
+@return: Tupla coordinate (x,y)
+@raises: Exception se formato non valido
+"""
 def check_pose(value):
     try:
         ret_value = value.split()
@@ -455,6 +505,10 @@ def check_pose(value):
         raise Exception(f"{value} is not made of 2 numbers")
 
 
+"""
+Analizza argomenti linea comando.
+@return: Oggetto con argomenti parsati
+"""
 def parse_args():
     # Get an instance of RosPack with the default search paths
     rospack = rospkg.RosPack()
@@ -495,6 +549,17 @@ def parse_args():
         help="Use this to set the rng seed.")   
     return parser.parse_args()
 
+"""
+Genera contenuto file world per Stage.
+@param image: Numero immagine
+@param name: Nome mondo
+@param speedup: Fattore accelerazione simulazione
+@param pose: Posa iniziale robot
+@param scale: Scala mappa (metri/pixel)
+@param sizex: Larghezza mappa in metri
+@param sizey: Altezza mappa in metri
+@return: Stringa contenuto file world
+"""
 def get_world_text(image, name, speedup, pose, scale, sizex, sizey):
     return f"""
     # World {name}
@@ -592,6 +657,12 @@ def get_world_text(image, name, speedup, pose, scale, sizex, sizey):
     )
     """
 
+"""
+Genera nome file univoco per output.
+@param base_dir: Directory base
+@param no_timestamp: Se escludere timestamp
+@return: Nome file univoco
+"""
 def get_non_existent_filename(base_dir, no_timestamp):
     filename = "src/"
     if no_timestamp:
@@ -606,6 +677,10 @@ def get_non_existent_filename(base_dir, no_timestamp):
             filename = os.path.join(base_dir, f"image_{time.time_ns()}.png")
     return filename
 
+"""
+Punto ingresso principale programma.
+Processa argomenti e genera mappe modificate.
+"""
 def main():
     # Analizza gli argomenti da linea di comando
     args = parse_args()
