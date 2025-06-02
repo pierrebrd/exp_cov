@@ -1,49 +1,34 @@
 """
-This script executes exploration vs coverage navigation comparisons using ROS and Stage simulator.
+Script per confrontare navigazione basata su esplorazione vs copertura usando ROS e Stage.
+Esegue esperimenti multipli confrontando due strategie:
+1. Esplorazione usando explore_lite
+2. Navigazione a copertura usando waypoint predefiniti
 
-It runs multiple experiments comparing two robot navigation strategies:
-1. Exploration using explore_lite
-2. Coverage navigation using predefined waypoints
-
-For each run, it:
-- Creates a new directory for the run's data
-- Executes exploration and measures time/area covered
-- Executes waypoint coverage and measures time/area covered 
-- Saves maps and logs for both strategies
-- Compares and records the differences in time and area coverage
-
-The script uses ROS nodes for:
-- Stage simulation
-- SLAM (slam_toolbox)
-- Distance checking
-- Map saving
-
-Requirements:
-- ROS with stage_ros
-- explore_lite package
-- slam_toolbox package
-- Proper ROS workspace setup with exp_cov package
+Per ogni test:
+- Crea una directory per i dati
+- Esegue esplorazione e misura tempo/area coperta
+- Esegue copertura e misura tempo/area coperta
+- Salva mappe e log per entrambe le strategie
 """
 
+# Import necessari
 import subprocess as sp
-from time import gmtime, strftime, sleep
 import argparse
 import cv2
 from PIL import Image
 import numpy as np
 import os
 import rospy
+from time import gmtime, strftime, sleep
 
+"""
+Analizza e valida argomenti linea comando.
+@return: Oggetto con argomenti parsati contenente:
+         - waypoints: Percorso file CSV waypoint
+         - world: Percorso file mondo Stage
+         - runs: Numero di test da eseguire
+"""
 def parse_args():
-    """
-    Parse and validate command line arguments.
-
-    Returns:
-        argparse.Namespace: Parsed arguments containing:
-            - waypoints: Path to CSV file with waypoints
-            - world: Path to Stage world file
-            - runs: Number of test runs to execute (default: 1)
-    """
     parser = argparse.ArgumentParser(description='Start exploration, logging time info to file and saving the final map.')
     parser.add_argument('--waypoints', required=True, help="Path to the waypoints csv file.")
     parser.add_argument('--world', required=True, help="Path to the stage world file.")
@@ -51,26 +36,20 @@ def parse_args():
     parser.add_argument('-d', '--dir', required=False, default="", help="Directory to save the run data.", metavar="DIR")
     return parser.parse_args()
 
+"""
+Ottiene timestamp corrente in formato leggibile.
+@return: Ora corrente in formato YYYY-MM-DD HH:MM:SS
+"""
 def now():
-    """
-    Get current timestamp in readable format.
-
-    Returns:
-        str: Current time in YYYY-MM-DD HH:MM:SS format
-    """
     return strftime("%Y-%m-%d %H:%M:%S", gmtime())
 
+"""
+Esegue esplorazione usando explore_lite e salva la mappa risultante.
+@param logfile_path: Percorso dove salvare i log
+@param run_subfolder: Sottocartella per i dati del test corrente
+@return: Tempo impiegato per l'esplorazione in secondi
+"""
 def run_expl(logfile_path, run_subfolder = ""):
-    """
-    Run exploration using explore_lite and save the resulting map.
-
-    Args:
-        logfile_path (str): Path where to save exploration logs
-        run_subfolder (str): Subfolder for the current run's data
-
-    Returns:
-        int: Time taken for exploration in seconds
-    """
     start = None
     args = ["roslaunch", "exp_cov", "explore_lite2.launch"]
     error_log_path = os.path.join(run_subfolder, "exploreErrorLog.txt")
@@ -135,10 +114,12 @@ def run_expl(logfile_path, run_subfolder = ""):
                 finally:
                     return time
 
+"""
+Determina se un messaggio deve essere loggato.
+@param line: Linea di log da valutare
+@return: True se il messaggio va loggato, False altrimenti
+"""
 def should_log_message(line):
-    """
-    Determina se un messaggio deve essere loggato in info.log
-    """
     # Lista di messaggi significativi da loggare
     important_messages = [
         "waypoint sender started",
@@ -169,18 +150,14 @@ def should_log_message(line):
     # Se il messaggio contiene una delle stringhe importanti, loggarlo
     return any(x in line_lower for x in important_messages)
 
+"""
+Esegue navigazione a waypoint e salva la mappa risultante.
+@param waypoints: Percorso file CSV waypoint
+@param logfile_path: Percorso dove salvare i log
+@param run_subfolder: Sottocartella per i dati del test corrente
+@return: Tempo impiegato per la navigazione in secondi
+"""
 def run_cov(waypoints, logfile_path="./coverage.log", run_subfolder = ""):
-    """
-    Run waypoint coverage navigation and save the resulting map.
-
-    Args:
-        waypoints (str): Path to waypoints CSV file
-        logfile_path (str): Path where to save coverage logs
-        run_subfolder (str): Subfolder for the current run's data
-
-    Returns:
-        int: Time taken for coverage navigation in seconds
-    """
     start = None
     args = ["rosrun", "exp_cov", "waypoint_navigation.py", "-p", waypoints]
     error_log_path = os.path.join(run_subfolder, "coverageErrorLog.txt")
@@ -245,21 +222,16 @@ def run_cov(waypoints, logfile_path="./coverage.log", run_subfolder = ""):
                 finally:
                     return time
 
+"""
+Configura ed esegue il processo di esplorazione completo.
+Avvia i nodi ROS necessari (Stage, SLAM, distance checker)
+ed esegue la strategia di esplorazione.
+@param cmd_args: Argomenti linea comando
+@param logfile_path: Percorso per logging
+@param run_subfolder: Sottocartella per i dati del test
+@return: Tempo totale esplorazione in secondi
+"""
 def run_exploration(cmd_args, logfile_path, run_subfolder):
-    """
-    Set up and execute the complete exploration process.
-    
-    Launches required ROS nodes (Stage, SLAM, distance checker) and
-    runs the exploration strategy.
-
-    Args:
-        cmd_args: Command line arguments
-        logfile_path (str): Path for logging
-        run_subfolder (str): Subfolder for the current run's data
-
-    Returns:
-        int: Total exploration time in seconds
-    """
     print("starting exploration.")
     stage_args = ["roslaunch", "exp_cov", "stage_init.launch", f"worldfile:={cmd_args.world}"]
     slam_args = ["roslaunch", "exp_cov", "slam_toolbox_no_rviz.launch"]
@@ -279,21 +251,16 @@ def run_exploration(cmd_args, logfile_path, run_subfolder):
                     stage_process.terminate()
                     return time
 
+"""
+Configura ed esegue il processo di copertura completo.
+Avvia i nodi ROS necessari (Stage, SLAM, distance checker)
+ed esegue la strategia di copertura a waypoint.
+@param cmd_args: Argomenti linea comando
+@param logfile_path: Percorso per logging
+@param run_subfolder: Sottocartella per i dati del test
+@return: Tempo totale copertura in secondi
+"""
 def run_coverage(cmd_args, logfile_path, run_subfolder):
-    """
-    Set up and execute the complete coverage navigation process.
-    
-    Launches required ROS nodes (Stage, SLAM, distance checker) and
-    runs the waypoint coverage strategy.
-
-    Args:
-        cmd_args: Command line arguments
-        logfile_path (str): Path for logging
-        run_subfolder (str): Subfolder for the current run's data
-
-    Returns:
-        int: Total coverage time in seconds
-    """
     print("starting coverage.")
     stage_args = ["roslaunch", "exp_cov", "stage_init.launch", f"worldfile:={cmd_args.world}"]
     slam_args = ["roslaunch", "exp_cov", "waypoint_slam.launch"]
@@ -313,6 +280,12 @@ def run_coverage(cmd_args, logfile_path, run_subfolder):
                     stage_process.terminate()
                     return time
 
+"""
+Valida che un valore sia un intero positivo.
+@param value: Valore da controllare
+@return: Intero positivo validato
+@raises: Exception se valore non valido
+"""
 def check_positive(value):
     """
     Validate that a string represents a positive integer.
@@ -335,21 +308,18 @@ def check_positive(value):
         raise Exception("{} is not an integer".format(value))
     return value
 
+"""
+Logica principale per il confronto esplorazione vs copertura.
+Per ogni test:
+1. Crea directory per i dati
+2. Esegue test di esplorazione e copertura
+3. Confronta e registra:
+   - Differenze tempo tra strategie
+   - Differenze copertura area
+   - Salva mappe risultanti
+@param cmd_args: Argomenti parsati con parametri test
+"""
 def main(cmd_args):
-    """
-    Main execution logic for the exploration vs coverage comparison.
-
-    For each run:
-    1. Creates a new run directory (within parent directory if specified)
-    2. Executes exploration and coverage tests
-    3. Compares and logs:
-        - Time differences between strategies
-        - Area coverage differences between strategies
-        - Saves exploration and coverage maps
-
-    Args:
-        cmd_args: Parsed command line arguments containing run parameters
-    """
     logfile_path_exploration = "explore.log"
     logfile_path_coverage = "coverage.log"
     logfile_path_result = "result.log"
