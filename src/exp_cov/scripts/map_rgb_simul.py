@@ -1,3 +1,6 @@
+# Python script ported to ROS2 (just needed to modify the way the script finds the maps directory).
+
+from struct import pack
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -6,7 +9,7 @@ import os
 import time
 import json
 import secrets
-import rospkg
+#import rospkg # ROS1
 import argparse
 
 # obj_img is a b&w image, in which the object is black and the background white
@@ -368,10 +371,16 @@ def check_pose(value):
 
 
 def parse_args():
-    # Get an instance of RosPack with the default search paths
-    rospack = rospkg.RosPack()
-    # Get the file path for exp_cov
-    package_path = rospack.get_path('exp_cov')
+
+
+    # # Get an instance of RosPack with the default search paths
+    # rospack = rospkg.RosPack()
+    # # Get the file path for exp_cov
+    # package_path = rospack.get_path('exp_cov')
+
+    # As written above, the code for ROS1 used rospkg to locate the workspace path.
+    # In ROS2, we directly use the relative path to the current script
+    package_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../")
 
     parser = argparse.ArgumentParser(description='Modify rgb maps automatically.')
     parser.add_argument('--map', default=os.path.join(package_path, "maps_rgb_lab/map1/map1_rgb.png"),
