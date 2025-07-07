@@ -1,3 +1,5 @@
+# Python script not linked to ROS, doesn't need to be ported to ROS2
+
 import cv2
 import yaml
 import os

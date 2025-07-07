@@ -1,3 +1,5 @@
+# Python script not linked to ROS, doesn't need to be ported to ROS2
+
 import numpy as np
 import cv2
 import argparse
