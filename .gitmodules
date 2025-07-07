@@ -1,3 +1,6 @@
 [submodule "src/m-explore-ros2"]
 	path = src/m-explore-ros2
 	url = git@github.com:pierrebrd/m-explore-ros2.git
+[submodule "src/stage_ros2"]
+	path = src/stage_ros2
+	url = git@github.com:pierrebrd/stage_ros2.git
