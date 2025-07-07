@@ -1,8 +1,12 @@
-# exp_cov
+# Experience-Based Coverage
 
-This repository provides some utilities for experience-based coverage. It's tested and working on Ubuntu 20.04 using [ROS Noetic](https://wiki.ros.org/noetic).
+This repository is a fork of [d-ber/exp_cov](https://github.com/d-ber/exp_cov), and containes the additions of [paoloterragno/exp_cov](https://github.com/paoloterragno/exp_cov) in the `pter-develop` branch.
 
-The main files are in src/exp_cov.
+The original work of d-ber (Davide Betalero) is made to work on ROS1 Noetic on Ubuntu 20.04. This fork aims to port the project to ROS2 Humble on Ubuntu 22.04, and to add some features.
+
+The project provides some utilities for experience-based coverage.
+
+The main files are in `src/exp_cov`.
 
 ### Workflow
 
