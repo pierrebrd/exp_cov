@@ -12,26 +12,26 @@ from pathfinding.core.diagonal_movement import DiagonalMovement
 from pathfinding.core.grid import Grid
 from pathfinding.finder.a_star import AStarFinder
 
-def print_simple_param(name, value):
-    print(f"param {name} := {value};")
+def print_simple_param(file, name, value):
+    file.write(f"param {name} := {value};\n")
 
-def print_vector_param(name, pairs):
-    print(f"param {name} := ")
+def print_vector_param(file, name, pairs):
+    file.write(f"param {name} := \n")
     for (index, value) in pairs:
-        print(f"{index} {value}")
-    print(";")
+        file.write(f"{index} {value}\n")
+    file.write(";\n")
 
-def print_bidimensional_param(name, rows, cols, vals):
-    print(f"param {name} : ", end="")
+def print_bidimensional_param(file, name, rows, cols, vals):
+    file.write(f"param {name} : ")
     for col in range(1, cols+1):
-        print(f" {col} ", end="")
-    print(f" := ")
+        file.write(f" {col} ")
+    file.write(" := \n")
     for row in range(1, rows+1):
-        print(f"{row} ", end="")
+        file.write(f"{row} ")
         for col in range(0, cols):
-            print(f"{vals[row-1][col]} ", end="")
-        print("")
-    print(";")
+            file.write(f"{vals[row-1][col]} ")
+        file.write("\n")
+    file.write(";\n")
 
 def copertura_w(copertura_w_data):
     MAX_VISIBILITY_RANGE = 10000
@@ -65,11 +65,11 @@ def min_distance_to_holes(poly_with_holes, point):
         return -1 
     return min([hole.distance(point) for hole in poly_with_holes.interiors])
 
-def print_dat(poly, costs_path, pathfinding_matrix, max_guards, witnesses_num, coverage, obs_dist, guard_cost_mult):
-    print("\ndata;")
+def print_dat(output_file, poly, costs_path, pathfinding_matrix, max_guards, witnesses_num, coverage, obs_dist, guard_cost_mult):
+    output_file.write("\ndata;\n")
 
-    print_simple_param("coverage_coeff", 1)
-    print_simple_param("distance_coeff", 1)
+    print_simple_param(output_file, "coverage_coeff", 1)
+    print_simple_param(output_file, "distance_coeff", 1)
 
     witnesses = [poly.exterior.line_interpolate_point(d, normalized=True) for d in np.linspace(0, 1, witnesses_num)]
     nW = len(witnesses)
@@ -87,8 +87,8 @@ def print_dat(poly, costs_path, pathfinding_matrix, max_guards, witnesses_num, c
         if len(guards) <= max_guards:
             break
     nG = len(guards)
-    print_simple_param("nW", nW)
-    print_simple_param("nG", nG)
+    print_simple_param(output_file, "nW", nW)
+    print_simple_param(output_file, "nG", nG)
     
     copertura = []
     copribili = 0
@@ -100,7 +100,7 @@ def print_dat(poly, costs_path, pathfinding_matrix, max_guards, witnesses_num, c
                 copribili += 1
     
     min_coverage = min(coverage, (copribili/nW)-0.1)
-    print_simple_param("min_coverage", min_coverage)
+    print_simple_param(output_file, "min_coverage", min_coverage)
 
     guard_costs = []
     with open(costs_path, "r") as costs_file:
@@ -113,22 +113,22 @@ def print_dat(poly, costs_path, pathfinding_matrix, max_guards, witnesses_num, c
         for (i, (x,y)) in enumerate(guards):
             guard_costs.append((i+1, costs[x, y] * guard_cost_mult))
 
-    print_vector_param("guard_cost", guard_costs)
+    print_vector_param(output_file, "guard_cost", guard_costs)
 
-    print_bidimensional_param("coverage", nW, nG, copertura)
+    print_bidimensional_param(output_file, "coverage", nW, nG, copertura)
     
     distanze = []
     with concurrent.futures.ProcessPoolExecutor() as executor:
         distanze_gg_data = [(i, g1, guards, pathfinding_matrix) for i, g1 in enumerate(guards)]
         for i, dis_gg in executor.map(distanza_gg, distanze_gg_data):
             distanze.insert(i, dis_gg)
-    print_bidimensional_param("distance", nG, nG, distanze)
+    print_bidimensional_param(output_file, "distance", nG, nG, distanze)
 
-    print("\nend;")
+    output_file.write("\nend;\n")
 
     # Save guard location outside problem data since it's of no use for the optimization (distances are precalculated)
-    print_vector_param("guard_position", [(i+1, (f"{x} {y}")) for (i, (x,y)) in enumerate(guards)])
-    print_vector_param("witness_position", [(i+1, (f"{p.x} {p.y}")) for (i, p) in enumerate(witnesses)])
+    print_vector_param(output_file, "guard_position", [(i+1, (f"{x} {y}")) for (i, (x,y)) in enumerate(guards)])
+    print_vector_param(output_file, "witness_position", [(i+1, (f"{p.x} {p.y}")) for (i, p) in enumerate(witnesses)])
 
 def check_fraction(value):
     try:
@@ -167,12 +167,13 @@ def check_positive_float(value):
     return value
 
 def parse_args():
-
     parser = argparse.ArgumentParser(description='Compute data to run optimization.')
     parser.add_argument('--img', default=os.path.join(os.getcwd(), "image.png"),
         help="Path to the map png image file.", metavar="IMG_PATH")
     parser.add_argument('--costs', default=os.path.join(os.getcwd(), "costs.txt"),
         help="Path to the map txt costs file.", metavar="COSTS_PATH")
+    parser.add_argument('--output', default=None,
+        help="Path to output data file. If not specified, will use same directory as costs file.", metavar="OUTPUT_PATH")
     parser.add_argument('--max-guards', default=300, type=check_positive,
         help="Maximum number of guards.", metavar="GUARDS")
     parser.add_argument('--witnesses', default=300, type=check_positive,
@@ -186,7 +187,6 @@ def parse_args():
     return parser.parse_args()
 
 def main():
-
     args = parse_args()
     costs_path = args.costs
     img_path = args.img
@@ -198,6 +198,13 @@ def main():
     MIN_HOLE_AREA = 10
     DEBUG_HOLES = False
     DEBUG_CONTOUR = False 
+
+    # If output path is not specified, use the same directory as costs file
+    if args.output is None:
+        output_path = os.path.join(os.path.dirname(costs_path), "data.dat")
+    else:
+        output_path = args.output
+
     img = cv2.imread(img_path)
     img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     contours, _ = cv2.findContours(img, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
@@ -244,7 +251,9 @@ def main():
     if poly.geom_type == 'MultiPolygon':
         poly = max(poly.geoms, key=lambda a: a.area)  
     if shapely.validation.explain_validity(poly) == "Valid Geometry":
-        print_dat(poly, costs_path, pathfinding_matrix, max_guards, witnesses, coverage, obs_dist, guard_cost_mult)
+        with open(output_path, 'w') as output_file:
+            print_dat(output_file, poly, costs_path, pathfinding_matrix, max_guards, witnesses, coverage, obs_dist, guard_cost_mult)
+        print(f"Data written to {output_path}")
     else:
         print(shapely.validation.explain_validity(poly))
 
