@@ -4,6 +4,16 @@ This repository is a fork of [d-ber/exp_cov](https://github.com/d-ber/exp_cov), 
 
 The original work of d-ber (Davide Betalero) is made to work on ROS1 Noetic on Ubuntu 20.04. This fork aims to port the project to ROS2 Humble on Ubuntu 22.04, and to add some features.
 
+## Cloning
+
+This project uses recursive submodules, so you need to clone it with the `--recurse-submodules` option:
+
+```bash
+git clone --recurse-submodules <repo_url>
+```
+
+## Content
+
 The project provides some utilities for experience-based coverage.
 
 The main files are in `src/exp_cov`.
