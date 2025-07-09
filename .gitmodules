@@ -1,3 +1,4 @@
 [submodule "src/exploration_benchmarking"]
 	path = src/exploration_benchmarking
 	url = git@github.com:aislabunimi/exploration_benchmarking.git
+	branch = main
