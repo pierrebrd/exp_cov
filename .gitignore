@@ -1,10 +1,10 @@
 build/
 devel/
+log/
 .vscode/c_cpp_properties.json
 .vscode/settings.json
 .catkin_workspace
 src/exp_cov/world/bitmaps/image.png
-.gitignore
 src/exp_cov/world/bitmaps/rectangles.json
 src/exp_cov/world/world0.world
 src/exp_cov/world/bitmaps/image0.png
