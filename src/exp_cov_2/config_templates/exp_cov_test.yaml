@@ -1,0 +1,82 @@
+# The variables in UPPERCASE are list where each item will be use to generate runs
+
+map_saver_interval: 60 # seconds, wall time
+rviz_config: "rviz/explore-lite.rviz"
+rosbag2_recorded_topics: [
+        "/odom", # robot odometry
+        "/ground_truth", # ground truth robot position
+        "/cmd_vel",
+        "/rosout", # logs, not really useful
+        "/goal_sent", # goals sent by the exploration algorithmFalse
+        "/goal_reached", # goals reached by the exploration algorithm
+        "/clock", # clock, to use sim time
+        "/scan", # Useful for replaying
+        "/tf",
+        "/tf_static",
+        # "-a",
+    ]
+
+WORLD_NAME:
+    [
+        "world0",
+        "world1",
+        "world2",
+        "world3",
+        "world4",
+        "world5",
+        "world6",
+        "world7",
+        "world8",
+        "world9",
+    ]
+
+worlds_folder: "../../exp_cov_2/worlds" # Relative path to the folder containing the worlds, from the folder where singlerun.py is.
+
+slam:
+    package: "slam_toolbox" # Package containing the SLAM node /launch file
+    name: "online_async_launch.py" # Can be launch file (ending with .py or .xml) or node name (e.g. "slam_toolbox")
+    is_launch_file: true # Set to true if slam_name is a launch file, false if it is a node name.
+    params_file_argument: "slam_params_file" # The name of the argument to pass the params file to the launchfile.
+    launchfile_args: # For a launchfile
+        use_sim_time: "true"
+        autostart: "true"
+    ros_args: [] # Other arguments to pass to the CLI, without the "--ros-args" prefix.
+    PARAMS_FILE: ["../../exp_cov_2/params/slam/slam_toolbox_exp_cov.yaml"] # Relative Path to the SLAM parameters file for nodes, from the folder where singlerun.py is. if using a launchfile, the path will be passed on the params_file argument.
+
+navigation:
+    package: "nav2_bringup"
+    name: "navigation_launch.py"
+    is_launch_file: true
+    params_file_argument: "params_file"
+    ros_args: []
+    launchfile_args:
+        use_sim_time: "true"
+        autostart: "true"
+        log_level: "info"
+    PARAMS_FILE: ["../../exp_cov_2/params/navigation/nav2_params.yaml"] # List of params files. The generator will create a run params for every file in the list
+
+exploration:
+    package: "explore_lite"
+    name: "explore"
+    is_launch_file: false
+    params_file_argument: "" # Not used for a node
+    # other_params maybe i could put the use sim time here
+    launchfile_args: {}
+    ros_args: ["--log-level", "info", "--log-level", "rcl:=warn"]
+    PARAMS_FILE:
+        ["../../exp_cov_2/params/exploration/explore_lite_params_exp_cov.yaml"]
+
+simulation:
+    package: "stage_ros2"
+    name: "stage.launch.py"
+    is_launch_file: true
+    params_file_argument: "" # Not used here
+    launchfile_args:
+        enforce_prefixes: "false"
+        use_static_transformations: "true"
+        one_tf_tree: "false"
+    ros_args: []
+    PARAMS_FILE: [""]
+
+additional_processes: [] # List of other nodes or launch files to run. The list containes dicts, with keys "package", "name", ...
+
