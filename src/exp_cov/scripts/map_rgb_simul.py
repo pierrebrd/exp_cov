@@ -2,7 +2,7 @@
 
 from struct import pack
 
-# Import necessari per l'elaborazione delle immagini e gestione dati
+# Required imports for image processing and data handling
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16,16 +16,16 @@ import secrets
 import argparse
 
 """
-Trasla e ruota un oggetto all'interno di un'area di movimento specificata.
-@param obj_img: Immagine B/N con oggetto nero su sfondo bianco
-@param movement_area: Area consentita per il movimento
-@param img: Immagine B/N target per la traslazione
-@param dist_tra: Distribuzione per la traslazione
-@param dist_rot: Distribuzione per la rotazione
-@param show_steps: Mostra passaggi intermedi
-@param disable_rotation: Disabilita rotazione
-@param rng: Generatore numeri casuali
-@return: (immagine traslata, dx, dy)
+Translates and rotates an object within a specified movement area.
+@param obj_img: B/W image with black object on white background
+@param movement_area: Allowed movement area
+@param img: Target B/W image for translation
+@param dist_tra: Distribution for translation
+@param dist_rot: Distribution for rotation
+@param show_steps: Show intermediate steps
+@param disable_rotation: Disable rotation
+@param rng: Random number generator
+@return: (translated image, dx, dy)
 """
 
 
@@ -130,19 +130,19 @@ def translate_obj(
 
 
 """
-Estrae e processa oggetti colorati da una mappa RGB.
-Gestisce porte in diversi stati e oggetti con aree di movimento limitate.
-@param image: Immagine RGB input
-@param movement_mask_image: Maschera aree movimento
-@param rectangles_path: Percorso file JSON rettangoli
-@param show_recap: Mostra riepilogo finale
-@param show_steps: Mostra passaggi elaborazione
-@param save_map: Salva mappa modificata
-@param sizex: Larghezza mappa in metri
-@param sizey: Altezza mappa in metri  
-@param silent: Sopprime messaggi output
-@param seed: Seed generatore casuale
-@return: Immagine con oggetti traslati
+Extracts and processes colored objects from an RGB map.
+Handles doors in different states and objects with limited movement areas.
+@param image: Input RGB image
+@param movement_mask_image: Mask for movement areas
+@param rectangles_path: Path to JSON rectangles file
+@param show_recap: Show final recap
+@param show_steps: Show processing steps
+@param save_map: Save modified map
+@param sizex: Map width in meters
+@param sizey: Map height in meters  
+@param silent: Suppress output messages
+@param seed: Random generator seed
+@return: Image with translated objects
 """
 
 
@@ -165,7 +165,7 @@ def extract_color_pixels(
     hsv_movement = cv2.cvtColor(movement_mask_image, cv2.COLOR_BGR2HSV)
 
     # Define the HSV range based on the specified color
-    # (red, green, blue) that is (oggetti semistatici, aree di disturbo, clutter)
+    # (red, green, blue) that is (semi-static objects, disturbance areas, clutter)
     RED = "red"
     GREEN = "green"
     BLUE = "blue"
@@ -420,42 +420,42 @@ def extract_color_pixels(
     STD_TRA = 10
     norm_tra = st.norm(loc=MEAN_TRA, scale=STD_TRA)
 
-    # Parametri per la distribuzione normale che controlla lo spostamento delle aree verdi
-    # Media 0 e deviazione standard 0.1 per movimenti molto limitati
-    MEAN_GREEN = 0  # Media della distribuzione (nessuno spostamento medio)
-    STD_GREEN = 0.1  # Deviazione standard piccola per limitare gli spostamenti
+    # Parameters for the normal distribution controlling the movement of green areas
+    # Mean 0 and standard deviation 0.1 for very limited movements
+    MEAN_GREEN = 0  # Mean of the distribution (no average movement)
+    STD_GREEN = 0.1  # Small standard deviation to limit movements
     norm_green = st.norm(loc=MEAN_GREEN, scale=STD_GREEN)
 
-    # Parametri per la distribuzione normale che controlla le rotazioni degli oggetti
-    # Media 0 e deviazione standard 20 gradi per rotazioni moderate
-    MEAN_ROT = 0  # Media della distribuzione (nessuna rotazione media)
-    STD_ROT = 20  # Deviazione standard di 20 gradi
+    # Parameters for the normal distribution controlling object rotations
+    # Mean 0 and standard deviation 20 degrees for moderate rotations
+    MEAN_ROT = 0  # Mean of the distribution (no average rotation)
+    STD_ROT = 20  # Standard deviation of 20 degrees
     norm_rot = st.norm(loc=MEAN_ROT, scale=STD_ROT)
 
-    # Probabilità di comparsa degli oggetti blu (clutter)
-    # 50% di probabilità che un oggetto blu appaia nella scena
+    # Probability of appearance of blue objects (clutter)
+    # 50% probability that a blue object appears in the scene
     CLUTTER_PROB = 0.5
     bernoulli_clutter = st.bernoulli(CLUTTER_PROB)
 
-    # Lista per memorizzare le informazioni sui rettangoli che descrivono le aree verdi
+    # List to store information about rectangles describing green areas
     rectangles_info = []
 
-    # Crea una copia della lista dei contorni verdi per poterli modificare
+    # Create a copy of the green contours list to modify them
     contours_green_translated = list(contours[colors.index(GREEN)])
-    green_idx = 0  # Indice per tenere traccia dell'area verde corrente
+    green_idx = 0  # Index to keep track of the current green area
 
-    # Ottiene dimensioni dell'immagine per le successive trasformazioni di coordinate
+    # Get image dimensions for subsequent coordinate transformations
     image_width = image.shape[1]
     image_height = image.shape[0]
-    size_width = sizey  # Dimensione della mappa in metri (larghezza)
-    size_height = sizex  # Dimensione della mappa in metri (altezza)
+    size_width = sizey  # Map width in meters
+    size_height = sizex  # Map height in meters
 
     # Itera su tutti gli oggetti trovati nell'immagine
     for j, (contour, obj_color_idx, object_image, movement_area) in enumerate(
         contour_obj_image_movement_area
     ):
         if colors[obj_color_idx] == GREEN:
-            # Per le aree verdi, applica una traslazione limitata senza rotazione
+            # For green areas, apply limited translation without rotation
             # translate_obj restituisce anche dx e dy dello spostamento effettuato
             _, dx, dy = translate_obj(
                 object_image,
@@ -468,15 +468,15 @@ def extract_color_pixels(
                 rng=rng,
             )
 
-            # Aggiorna le coordinate del contorno verde con la traslazione effettuata
+            # Update the green contour coordinates with the performed translation
             for r in range(4):
                 contours_green_translated[green_idx][r][0][0] += dx
                 contours_green_translated[green_idx][r][0][1] += dy
 
-            # Calcola il rettangolo che racchiude il contorno
+            # Calculate the rectangle bounding the contour
             x, y, w, h = cv2.boundingRect(contour)
 
-            # Applica la traslazione alle coordinate del rettangolo
+            # Apply translation to rectangle coordinates
             x = x + dx
             y = y + dy
 
@@ -588,10 +588,10 @@ def extract_color_pixels(
 
 
 """
-Valida input intero positivo.
-@param value: Valore da controllare
-@return: Intero positivo validato
-@raises: Exception se valore non valido
+Validates positive integer input.
+@param value: Value to check
+@return: Validated positive integer
+@raises: Exception if value is invalid
 """
 
 
@@ -608,10 +608,10 @@ def check_positive(value):
 
 
 """
-Valida input float positivo.
-@param value: Valore da controllare
-@return: Float positivo validato
-@raises: Exception se valore non valido
+Validates positive float input.
+@param value: Value to check
+@return: Validated positive float
+@raises: Exception if value is invalid
 """
 
 
@@ -626,10 +626,10 @@ def check_positive_float(value):
 
 
 """
-Valida input intero non negativo.
-@param value: Valore da controllare
-@return: Intero non negativo validato 
-@raises: Exception se valore non valido
+Validates non-negative integer input.
+@param value: Value to check
+@return: Validated non-negative integer 
+@raises: Exception if value is invalid
 """
 
 
@@ -646,10 +646,10 @@ def check_positive_or_zero(value):
 
 
 """
-Valida formato posa (x y).
-@param value: Stringa da controllare
-@return: Tupla coordinate (x,y)
-@raises: Exception se formato non valido
+Validates pose format (x y).
+@param value: String to check
+@return: Tuple of coordinates (x,y)
+@raises: Exception if format is invalid
 """
 
 
@@ -666,8 +666,8 @@ def check_pose(value):
 
 
 """
-Analizza argomenti linea comando.
-@return: Oggetto con argomenti parsati
+Parses command line arguments.
+@return: Object with parsed arguments
 """
 
 
@@ -771,15 +771,15 @@ def parse_args():
 
 
 """
-Genera contenuto file world per Stage.
-@param image: Numero immagine
-@param name: Nome mondo
-@param speedup: Fattore accelerazione simulazione
-@param pose: Posa iniziale robot
-@param scale: Scala mappa (metri/pixel)
-@param sizex: Larghezza mappa in metri
-@param sizey: Altezza mappa in metri
-@return: Stringa contenuto file world
+Generates world file content for Stage.
+@param image: Image number
+@param name: World name
+@param speedup: Simulation speedup factor
+@param pose: Robot initial pose
+@param scale: Map scale (meters/pixel)
+@param sizex: Map width in meters
+@param sizey: Map height in meters
+@return: World file content string
 """
 
 
@@ -882,10 +882,10 @@ def get_world_text(image, name, speedup, pose, scale, sizex, sizey):
 
 
 """
-Genera nome file univoco per output.
-@param base_dir: Directory base
-@param no_timestamp: Se escludere timestamp
-@return: Nome file univoco
+Generates unique output filename.
+@param base_dir: Base directory
+@param no_timestamp: Whether to exclude timestamp
+@return: Unique filename
 """
 
 
@@ -905,13 +905,13 @@ def get_non_existent_filename(base_dir, no_timestamp):
 
 
 """
-Punto ingresso principale programma.
-Processa argomenti e genera mappe modificate.
+Main program entry point.
+Processes arguments and generates modified maps.
 """
 
 
 def main():
-    # Analizza gli argomenti da linea di comando
+    # Parse command line arguments
     args = parse_args()
     image_path = args.map  # Percorso dell'immagine RGB di input
     show_recap = args.show  # Flag per mostrare un riepilogo finale
@@ -944,7 +944,7 @@ def main():
     # Gestisce i diversi casi di generazione mappe
     if worlds == 0 and world_num is None:
         if batch == 1:
-            # Caso singola mappa
+            # Single map case
             rectangles_path = (
                 os.path.join(base_dir, "rectangles.json")
                 if no_timestamp
@@ -963,14 +963,14 @@ def main():
                 seed=seed,
             )
 
-            # Salva la mappa modificata se richiesto
+            # Save the modified map if requested
             if save_map:
                 filename = get_non_existent_filename(base_dir, no_timestamp)
                 cv2.imwrite(filename, image_modified)
                 if not silent:
                     print(f"Saved map as {filename}")
         else:
-            # Caso batch di mappe
+            # Batch map case
             for i in range(batch):
                 rectangles_path = os.path.join(base_dir, f"rectangles_{i}.json")
                 image_modified = extract_color_pixels(
@@ -990,23 +990,23 @@ def main():
                 if not silent:
                     print(f"Saved map as {filename}")
     else:
-        # Caso generazione mondi per Stage
+        # Stage world generation case
         world_range = None
         if world_num is not None:
-            world_range = [world_num]  # Genera un mondo specifico
+            world_range = [world_num]  # Generate a specific world
         else:
-            world_range = range(0, worlds)  # Genera una serie di mondi
+            world_range = range(0, worlds)  # Generate a series of worlds
 
-        # Ottiene il nome base della mappa
+        # Get the base name of the map
         name = os.path.basename(os.path.splitext(image_path)[0])
 
-        # Genera ogni mondo richiesto
+        # Generate each required world
         for i in world_range:
-            # Crea i percorsi per i file di output
+            # Create output file paths
             rectangles_path = os.path.join(base_dir, f"bitmaps/rectangles{i}.json")
             bitmaps_dir = os.path.join(base_dir, "bitmaps")
 
-            # Crea la directory bitmaps se non esiste
+            # Create the bitmaps directory if it does not exist
             if not os.path.exists(bitmaps_dir) or not os.path.isdir(bitmaps_dir):
                 os.makedirs(bitmaps_dir)
 
@@ -1024,13 +1024,13 @@ def main():
                 seed=seed,
             )
 
-            # Salva la mappa modificata
+            # Save the modified map
             filename = os.path.join(base_dir, f"bitmaps/image{i}.png")
             cv2.imwrite(filename, image_modified)
             if not silent:
                 print(f"Saved map as {filename}")
 
-            # Crea e salva il file .world per Stage
+            # Create and save the .world file for Stage
             worldfile_path = os.path.join(base_dir, f"world{i}.world")
             with open(worldfile_path, "w", encoding="utf-8") as worldfile:
                 worldfile.write(

@@ -1,17 +1,19 @@
-"""
-Script per confrontare navigazione basata su esplorazione vs copertura usando ROS e Stage.
-Esegue esperimenti multipli confrontando due strategie:
-1. Esplorazione usando explore_lite
-2. Navigazione a copertura usando waypoint predefiniti
+# Needs to be ported to ROS2
 
-Per ogni test:
-- Crea una directory per i dati
-- Esegue esplorazione e misura tempo/area coperta
-- Esegue copertura e misura tempo/area coperta
-- Salva mappe e log per entrambe le strategie
+"""
+Script to compare navigation based on exploration vs coverage using ROS and Stage.
+Runs multiple experiments comparing two strategies:
+1. Exploration using explore_lite
+2. Coverage navigation using predefined waypoints
+
+For each test:
+- Creates a directory for data
+- Runs exploration and measures time/covered area
+- Runs coverage and measures time/covered area
+- Saves maps and logs for both strategies
 """
 
-# Import necessari
+# Required imports
 import subprocess as sp
 import argparse
 import cv2
@@ -22,72 +24,111 @@ import rospy
 from time import gmtime, strftime, sleep
 
 """
-Analizza e valida argomenti linea comando.
-@return: Oggetto con argomenti parsati contenente:
-         - waypoints: Percorso file CSV waypoint
-         - world: Percorso file mondo Stage
-         - runs: Numero di test da eseguire
+Parses and validates command line arguments.
+@return: Object with parsed arguments containing:
+         - waypoints: Path to waypoint CSV file
+         - world: Path to Stage world file
+         - runs: Number of tests to run
 """
+
+
 def parse_args():
-    parser = argparse.ArgumentParser(description='Start exploration, logging time info to file and saving the final map.')
-    parser.add_argument('--waypoints', required=True, help="Path to the waypoints csv file.")
-    parser.add_argument('--world', required=True, help="Path to the stage world file.")
-    parser.add_argument('-r', '--runs', required=False, default=1,  type=check_positive, help="Number of tests to run.", metavar="RUNS")
-    parser.add_argument('-d', '--dir', required=False, default="", help="Directory to save the run data.", metavar="DIR")
+    parser = argparse.ArgumentParser(
+        description="Start exploration, logging time info to file and saving the final map."
+    )
+    parser.add_argument(
+        "--waypoints", required=True, help="Path to the waypoints csv file."
+    )
+    parser.add_argument("--world", required=True, help="Path to the stage world file.")
+    parser.add_argument(
+        "-r",
+        "--runs",
+        required=False,
+        default=1,
+        type=check_positive,
+        help="Number of tests to run.",
+        metavar="RUNS",
+    )
+    parser.add_argument(
+        "-d",
+        "--dir",
+        required=False,
+        default="",
+        help="Directory to save the run data.",
+        metavar="DIR",
+    )
     return parser.parse_args()
 
+
 """
-Ottiene timestamp corrente in formato leggibile.
-@return: Ora corrente in formato YYYY-MM-DD HH:MM:SS
+Gets current timestamp in readable format.
+@return: Current time in format YYYY-MM-DD HH:MM:SS
 """
+
+
 def now():
     return strftime("%Y-%m-%d %H:%M:%S", gmtime())
 
+
 """
-Esegue esplorazione usando explore_lite e salva la mappa risultante.
-@param logfile_path: Percorso dove salvare i log
-@param run_subfolder: Sottocartella per i dati del test corrente
-@return: Tempo impiegato per l'esplorazione in secondi
+Runs exploration using explore_lite and saves the resulting map.
+@param logfile_path: Path to save logs
+@param run_subfolder: Subfolder for current test data
+@return: Time taken for exploration in seconds
 """
-def run_expl(logfile_path, run_subfolder = ""):
+
+
+def run_expl(logfile_path, run_subfolder=""):
     start = None
     args = ["roslaunch", "exp_cov", "explore_lite2.launch"]
     error_log_path = os.path.join(run_subfolder, "exploreErrorLog.txt")
     info_log_path = os.path.join(run_subfolder, "info.log")
     last_message = None
     last_message_time = 0
-    
+
     with sp.Popen(args, stdout=sp.PIPE, stderr=sp.STDOUT) as process:
-        with open(logfile_path, mode="+a", encoding="utf-8") as logfile, \
-             open(error_log_path, mode="+a", encoding="utf-8") as error_log, \
-             open(info_log_path, mode="+a", encoding="utf-8") as info_log:
+        with open(logfile_path, mode="+a", encoding="utf-8") as logfile, open(
+            error_log_path, mode="+a", encoding="utf-8"
+        ) as error_log, open(info_log_path, mode="+a", encoding="utf-8") as info_log:
             try:
                 start = rospy.get_rostime().secs
                 logfile.write(f"{now()}: Starting exploration.\n")
                 for line in process.stdout:
-                    line = line.decode('utf8')
+                    line = line.decode("utf8")
                     current_time = rospy.Time.now().secs
-                    
-                    # Log tutte le informazioni non di errore
-                    if not any(x in line.lower() for x in ["error", "abort", "stuck", "timeout"]):
-                        # Controlla se il messaggio deve essere loggato
+
+                    # Log all non-error information
+                    if not any(
+                        x in line.lower()
+                        for x in ["error", "abort", "stuck", "timeout"]
+                    ):
+                        # Check if the message should be logged
                         if should_log_message(line):
-                            # Se il messaggio è diverso dal precedente o è passato più di 1 secondo
-                            if line.strip() != last_message or (current_time - last_message_time) >= 1:
+                            # If the message is different from the previous or more than 1 second has passed
+                            if (
+                                line.strip() != last_message
+                                or (current_time - last_message_time) >= 1
+                            ):
                                 info_log.write(f"{now()}: {line.strip()}\n")
                                 last_message = line.strip()
                                 last_message_time = current_time
-                    
+
                     # Check for error conditions in the output
                     if "error" in line.lower():
-                        error_log.write(f"{now()}: Exploration Error - {line.strip()}\n")
+                        error_log.write(
+                            f"{now()}: Exploration Error - {line.strip()}\n"
+                        )
                     if "abort" in line.lower():
-                        error_log.write(f"{now()}: Exploration Aborted - {line.strip()}\n")
+                        error_log.write(
+                            f"{now()}: Exploration Aborted - {line.strip()}\n"
+                        )
                     if "stuck" in line.lower():
                         error_log.write(f"{now()}: Robot Stuck - {line.strip()}\n")
                     if "timeout" in line.lower():
-                        error_log.write(f"{now()}: Operation Timeout - {line.strip()}\n")
-                        
+                        error_log.write(
+                            f"{now()}: Operation Timeout - {line.strip()}\n"
+                        )
+
                     if line.strip()[1:].startswith("["):
                         if "exploration stopped." in line.lower():
                             logfile.write(f"{now()}: Finished exploration.\n")
@@ -101,7 +142,9 @@ def run_expl(logfile_path, run_subfolder = ""):
                 error_log.write(error_msg)
             finally:
                 time = rospy.get_rostime().secs - start
-                logfile.write(f"{now()}: Exploration ros time is {strftime('%H:%M:%S', gmtime(time))}.\n")
+                logfile.write(
+                    f"{now()}: Exploration ros time is {strftime('%H:%M:%S', gmtime(time))}.\n"
+                )
                 process.kill()
                 map_name = os.path.join(run_subfolder, "Map_exploration")
                 save_map = ["rosrun", "map_server", "map_saver", "-f", map_name]
@@ -114,13 +157,16 @@ def run_expl(logfile_path, run_subfolder = ""):
                 finally:
                     return time
 
+
 """
-Determina se un messaggio deve essere loggato.
-@param line: Linea di log da valutare
-@return: True se il messaggio va loggato, False altrimenti
+Determines if a message should be logged.
+@param line: Log line to evaluate
+@return: True if the message should be logged, False otherwise
 """
+
+
 def should_log_message(line):
-    # Lista di messaggi significativi da loggare
+    # List of important messages to log
     important_messages = [
         "waypoint sender started",
         "connected to move_base server",
@@ -128,60 +174,69 @@ def should_log_message(line):
         "goal pose reached",
         "found frontiers",
         "visualising frontiers",
-        "waiting for costmap"
+        "waiting for costmap",
     ]
-    
-    # Ignora completamente certi tipi di messaggi
+
+    # Completely ignore certain types of messages
     ignore_messages = [
         "tf_repeated_data",
         "getting status over the wire",
         "debug",
         "trying to publish",
         "transitioning",
-        "received comm state"
+        "received comm state",
     ]
-    
+
     line_lower = line.lower()
-    
-    # Se il messaggio contiene una delle stringhe da ignorare, non loggarlo
+
+    # If the message contains one of the ignore strings, do not log it
     if any(x in line_lower for x in ignore_messages):
         return False
-        
-    # Se il messaggio contiene una delle stringhe importanti, loggarlo
+
+    # If the message contains one of the important strings, log it
     return any(x in line_lower for x in important_messages)
 
+
 """
-Esegue navigazione a waypoint e salva la mappa risultante.
-@param waypoints: Percorso file CSV waypoint
-@param logfile_path: Percorso dove salvare i log
-@param run_subfolder: Sottocartella per i dati del test corrente
-@return: Tempo impiegato per la navigazione in secondi
+Runs waypoint navigation and saves the resulting map.
+@param waypoints: Path to waypoint CSV file
+@param logfile_path: Path to save logs
+@param run_subfolder: Subfolder for current test data
+@return: Time taken for navigation in seconds
 """
-def run_cov(waypoints, logfile_path="./coverage.log", run_subfolder = ""):
+
+
+def run_cov(waypoints, logfile_path="./coverage.log", run_subfolder=""):
     start = None
     args = ["rosrun", "exp_cov", "waypoint_navigation.py", "-p", waypoints]
     error_log_path = os.path.join(run_subfolder, "coverageErrorLog.txt")
     info_log_path = os.path.join(run_subfolder, "info.log")
     last_message = None
     last_message_time = 0
-    
+
     with sp.Popen(args, stdout=sp.PIPE, stderr=sp.STDOUT) as process:
-        with open(logfile_path, mode="+a", encoding="utf-8") as logfile, \
-             open(error_log_path, mode="+a", encoding="utf-8") as error_log, \
-             open(info_log_path, mode="+a", encoding="utf-8") as info_log:
+        with open(logfile_path, mode="+a", encoding="utf-8") as logfile, open(
+            error_log_path, mode="+a", encoding="utf-8"
+        ) as error_log, open(info_log_path, mode="+a", encoding="utf-8") as info_log:
             try:
                 start = rospy.get_rostime().secs
                 logfile.write(f"{now()}: Starting waypoint navigation.\n")
                 for line in process.stdout:
-                    line = line.decode('utf8')
+                    line = line.decode("utf8")
                     current_time = rospy.Time.now().secs
-                    
-                    # Log tutte le informazioni non di errore
-                    if not any(x in line.lower() for x in ["error", "abort", "timeout", "recovery"]):
-                        # Controlla se il messaggio deve essere loggato
+
+                    # Log all non-error information
+                    if not any(
+                        x in line.lower()
+                        for x in ["error", "abort", "timeout", "recovery"]
+                    ):
+                        # Check if the message should be logged
                         if should_log_message(line):
-                            # Se il messaggio è diverso dal precedente o è passato più di 1 secondo
-                            if line.strip() != last_message or (current_time - last_message_time) >= 1:
+                            # If the message is different from the previous or more than 1 second has passed
+                            if (
+                                line.strip() != last_message
+                                or (current_time - last_message_time) >= 1
+                            ):
                                 info_log.write(f"{now()}: {line.strip()}\n")
                                 last_message = line.strip()
                                 last_message_time = current_time
@@ -190,9 +245,13 @@ def run_cov(waypoints, logfile_path="./coverage.log", run_subfolder = ""):
                     if "error" in line.lower():
                         error_log.write(f"{now()}: Navigation Error - {line.strip()}\n")
                     if "abort" in line.lower():
-                        error_log.write(f"{now()}: Navigation Aborted - {line.strip()}\n")
+                        error_log.write(
+                            f"{now()}: Navigation Aborted - {line.strip()}\n"
+                        )
                     if "timeout" in line.lower():
-                        error_log.write(f"{now()}: Operation Timeout - {line.strip()}\n")
+                        error_log.write(
+                            f"{now()}: Operation Timeout - {line.strip()}\n"
+                        )
                     if "recovery" in line.lower():
                         error_log.write(f"{now()}: Recovery Action - {line.strip()}\n")
                         print("starting recovery behavior")
@@ -209,7 +268,9 @@ def run_cov(waypoints, logfile_path="./coverage.log", run_subfolder = ""):
                 error_log.write(error_msg)
             finally:
                 time = rospy.get_rostime().secs - start
-                logfile.write(f"{now()}: Waypoint navigation ros time is {strftime('%H:%M:%S', gmtime(time))}.\n")
+                logfile.write(
+                    f"{now()}: Waypoint navigation ros time is {strftime('%H:%M:%S', gmtime(time))}.\n"
+                )
                 process.kill()
                 map_name = os.path.join(run_subfolder, "Map_coverage")
                 save_map = ["rosrun", "map_server", "map_saver", "-f", map_name]
@@ -222,18 +283,26 @@ def run_cov(waypoints, logfile_path="./coverage.log", run_subfolder = ""):
                 finally:
                     return time
 
+
 """
-Configura ed esegue il processo di esplorazione completo.
-Avvia i nodi ROS necessari (Stage, SLAM, distance checker)
-ed esegue la strategia di esplorazione.
-@param cmd_args: Argomenti linea comando
-@param logfile_path: Percorso per logging
-@param run_subfolder: Sottocartella per i dati del test
-@return: Tempo totale esplorazione in secondi
+Sets up and runs the complete exploration process.
+Starts required ROS nodes (Stage, SLAM, distance checker)
+and runs the exploration strategy.
+@param cmd_args: Command line arguments
+@param logfile_path: Path for logging
+@param run_subfolder: Subfolder for test data
+@return: Total exploration time in seconds
 """
+
+
 def run_exploration(cmd_args, logfile_path, run_subfolder):
     print("starting exploration.")
-    stage_args = ["roslaunch", "exp_cov", "stage_init.launch", f"worldfile:={cmd_args.world}"]
+    stage_args = [
+        "roslaunch",
+        "exp_cov",
+        "stage_init.launch",
+        f"worldfile:={cmd_args.world}",
+    ]
     slam_args = ["roslaunch", "exp_cov", "slam_toolbox_no_rviz.launch"]
     dist_args = ["rosrun", "exp_cov", "distance_check.py"]
     with sp.Popen(stage_args, stdout=sp.DEVNULL, stderr=sp.DEVNULL) as stage_process:
@@ -243,7 +312,9 @@ def run_exploration(cmd_args, logfile_path, run_subfolder):
             sleep(10)
             print("started slam.")
             with open(logfile_path, mode="+a", encoding="utf-8") as logfile:
-                with sp.Popen(dist_args, stdout=logfile, stderr=logfile) as dist_process:
+                with sp.Popen(
+                    dist_args, stdout=logfile, stderr=logfile
+                ) as dist_process:
                     time = run_expl(logfile_path, run_subfolder)
                     print("exploration finished.")
                     dist_process.terminate()
@@ -251,18 +322,26 @@ def run_exploration(cmd_args, logfile_path, run_subfolder):
                     stage_process.terminate()
                     return time
 
+
 """
-Configura ed esegue il processo di copertura completo.
-Avvia i nodi ROS necessari (Stage, SLAM, distance checker)
-ed esegue la strategia di copertura a waypoint.
-@param cmd_args: Argomenti linea comando
-@param logfile_path: Percorso per logging
-@param run_subfolder: Sottocartella per i dati del test
-@return: Tempo totale copertura in secondi
+Sets up and runs the complete coverage process.
+Starts required ROS nodes (Stage, SLAM, distance checker)
+and runs the waypoint coverage strategy.
+@param cmd_args: Command line arguments
+@param logfile_path: Path for logging
+@param run_subfolder: Subfolder for test data
+@return: Total coverage time in seconds
 """
+
+
 def run_coverage(cmd_args, logfile_path, run_subfolder):
     print("starting coverage.")
-    stage_args = ["roslaunch", "exp_cov", "stage_init.launch", f"worldfile:={cmd_args.world}"]
+    stage_args = [
+        "roslaunch",
+        "exp_cov",
+        "stage_init.launch",
+        f"worldfile:={cmd_args.world}",
+    ]
     slam_args = ["roslaunch", "exp_cov", "waypoint_slam.launch"]
     dist_args = ["rosrun", "exp_cov", "distance_check.py"]
     with sp.Popen(stage_args, stdout=sp.DEVNULL, stderr=sp.DEVNULL) as stage_process:
@@ -272,7 +351,9 @@ def run_coverage(cmd_args, logfile_path, run_subfolder):
             sleep(10)
             print("started slam.")
             with open(logfile_path, mode="+a", encoding="utf-8") as logfile:
-                with sp.Popen(dist_args, stdout=logfile, stderr=logfile) as dist_process:
+                with sp.Popen(
+                    dist_args, stdout=logfile, stderr=logfile
+                ) as dist_process:
                     time = run_cov(cmd_args.waypoints, logfile_path, run_subfolder)
                     print("coverage finished.")
                     dist_process.terminate()
@@ -280,12 +361,15 @@ def run_coverage(cmd_args, logfile_path, run_subfolder):
                     stage_process.terminate()
                     return time
 
+
 """
-Valida che un valore sia un intero positivo.
-@param value: Valore da controllare
-@return: Intero positivo validato
-@raises: Exception se valore non valido
+Validates that a value is a positive integer.
+@param value: Value to check
+@return: Validated positive integer
+@raises: Exception if value is invalid
 """
+
+
 def check_positive(value):
     """
     Validate that a string represents a positive integer.
@@ -303,33 +387,38 @@ def check_positive(value):
     try:
         value = int(value)
         if value <= 0:
-            raise argparse.ArgumentTypeError("{} is not a positive integer".format(value))
+            raise argparse.ArgumentTypeError(
+                "{} is not a positive integer".format(value)
+            )
     except ValueError:
         raise Exception("{} is not an integer".format(value))
     return value
 
+
 """
-Logica principale per il confronto esplorazione vs copertura.
-Per ogni test:
-1. Crea directory per i dati
-2. Esegue test di esplorazione e copertura
-3. Confronta e registra:
-   - Differenze tempo tra strategie
-   - Differenze copertura area
-   - Salva mappe risultanti
-@param cmd_args: Argomenti parsati con parametri test
+Main logic for exploration vs coverage comparison.
+For each test:
+1. Creates directory for data
+2. Runs exploration and coverage tests
+3. Compares and records:
+   - Time differences between strategies
+   - Area coverage differences
+   - Saves resulting maps
+@param cmd_args: Parsed arguments with test parameters
 """
+
+
 def main(cmd_args):
     logfile_path_exploration = "explore.log"
     logfile_path_coverage = "coverage.log"
     logfile_path_result = "result.log"
 
-    # Crea la directory parent se specificata e non esiste
+    # Create parent directory if specified and does not exist
     parent_dir = cmd_args.dir if cmd_args.dir else "."
     if parent_dir != "." and not os.path.exists(parent_dir):
         os.makedirs(parent_dir)
 
-    # Trova il numero massimo di run nella directory parent
+    # Find the maximum run number in the parent directory
     maxrun = 0
     for i in os.listdir(parent_dir):
         try:
@@ -344,37 +433,48 @@ def main(cmd_args):
         print(f"run {r+1}/{cmd_args.runs} starting.")
         run_subfolder = os.path.join(parent_dir, f"run{maxrun+r}")
         os.mkdir(run_subfolder)
-        logfile_path_exploration_run = os.path.join(run_subfolder, logfile_path_exploration)
+        logfile_path_exploration_run = os.path.join(
+            run_subfolder, logfile_path_exploration
+        )
         logfile_path_coverage_run = os.path.join(run_subfolder, logfile_path_coverage)
         logfile_path_result_run = os.path.join(run_subfolder, logfile_path_result)
-        exploration_time = run_exploration(cmd_args, logfile_path_exploration_run, run_subfolder)
+        exploration_time = run_exploration(
+            cmd_args, logfile_path_exploration_run, run_subfolder
+        )
         sleep(2)
         coverage_time = run_coverage(cmd_args, logfile_path_coverage_run, run_subfolder)
         with open(logfile_path_result_run, mode="+a", encoding="utf-8") as logfile:
-            time_delta = exploration_time-coverage_time
-            time_deltas.append(exploration_time-coverage_time)
+            time_delta = exploration_time - coverage_time
+            time_deltas.append(exploration_time - coverage_time)
             msg = f"{now()}: Coverage time: {coverage_time}; Exploration time: {exploration_time}. Exploration - Coverage: {time_delta}. Unit is seconds."
             print(msg)
             logfile.write(f"{msg}\n")
-            expl_map = cv2.imread(os.path.join(run_subfolder, "Map_exploration.png"), cv2.IMREAD_GRAYSCALE)
-            cov_map = cv2.imread(os.path.join(run_subfolder, "Map_coverage.png"), cv2.IMREAD_GRAYSCALE)
+            expl_map = cv2.imread(
+                os.path.join(run_subfolder, "Map_exploration.png"), cv2.IMREAD_GRAYSCALE
+            )
+            cov_map = cv2.imread(
+                os.path.join(run_subfolder, "Map_coverage.png"), cv2.IMREAD_GRAYSCALE
+            )
             expl_map_area = np.sum(expl_map >= 250)
             cov_map_area = np.sum(cov_map >= 250)
-            area_delta = expl_map_area-cov_map_area
+            area_delta = expl_map_area - cov_map_area
             area_deltas.append(area_delta)
             msg = f"{now()}: Coverage mapped area: {cov_map_area}; Exploration mapped area: {expl_map_area}. Exploration - Coverage: {area_delta}. Unit is 0.05 meters, a pixel in the map."
             print(msg)
             logfile.write(f"{msg}\n")
         print(f"run {r+1}/{cmd_args.runs} finished.")
-    print(f"time_deltas (exploration-coverage): {time_deltas}\n;\narea_deltas (exploration-coverage): {area_deltas}\n;\n")
+    print(
+        f"time_deltas (exploration-coverage): {time_deltas}\n;\narea_deltas (exploration-coverage): {area_deltas}\n;\n"
+    )
+
 
 if __name__ == "__main__":
 
     cmd_args = parse_args()
     with sp.Popen(["roscore"], stdout=sp.DEVNULL, stderr=sp.DEVNULL) as roscore_process:
         sleep(3)
-        rospy.set_param('use_sim_time', True)
-        rospy.init_node('just_for_time', anonymous=True)
+        rospy.set_param("use_sim_time", True)
+        rospy.init_node("just_for_time", anonymous=True)
         sleep(3)
         main(cmd_args)
         roscore_process.kill()

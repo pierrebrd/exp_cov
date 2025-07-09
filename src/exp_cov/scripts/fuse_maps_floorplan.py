@@ -7,29 +7,29 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 """
-Script per la fusione di mappe e generazione di floorplan.
-Gestisce la combinazione di multiple mappe esplorate e la creazione di una mappa probabilistica.
+Script for map fusion and floorplan generation.
+Handles the combination of multiple explored maps and the creation of a probabilistic map.
 
-Il processo include:
-1. Caricamento e preprocessing delle mappe
-2. Fusione probabilistica delle celle
-3. Generazione di una mappa finale con costi
-4. Riempimento di eventuali buchi nella mappa
+The process includes:
+1. Loading and preprocessing maps
+2. Probabilistic cell fusion
+3. Generation of a final map with costs
+4. Filling any holes in the map
 """
 
 
 def check_positive(value):
     """
-    Valida che un valore sia un intero positivo.
+    Validates that a value is a positive integer.
 
     Args:
-        value: Valore da controllare
+        value: Value to check
 
     Returns:
-        int: Il valore convertito in intero positivo
+        int: The value converted to a positive integer
 
     Raises:
-        Exception: Se il valore non è un intero positivo
+        Exception: If the value is not a positive integer
     """
     try:
         value = int(value)
@@ -44,10 +44,10 @@ def check_positive(value):
 
 def parse_args():
     """
-    Configura e gestisce il parsing degli argomenti da linea di comando.
+    Sets up and handles command line argument parsing.
 
     Returns:
-        Namespace: Gli argomenti parsati
+        Namespace: The parsed arguments
     """
     parser = argparse.ArgumentParser(description="Merge maps automatically.")
     parser.add_argument(
@@ -80,14 +80,14 @@ def parse_args():
 
 def addimage(image, addition):
     """
-    Combina due immagini tramite operazioni logiche.
+    Combines two images using logical operations.
 
     Args:
-        image: Immagine base
-        addition: Immagine da aggiungere
+        image: Base image
+        addition: Image to add
 
     Returns:
-        ndarray: L'immagine risultante dalla combinazione
+        ndarray: The resulting combined image
     """
     if addition is None:
         return image
@@ -97,29 +97,29 @@ def addimage(image, addition):
 
 def probabilize(image, num):
     """
-    Converte una mappa in una rappresentazione probabilistica.
+    Converts a map into a probabilistic representation.
 
     Args:
-        image: Mappa da convertire
-        num: Numero di mappe utilizzate
+        image: Map to convert
+        num: Number of maps used
 
     Returns:
-        ndarray: Mappa probabilistica risultante
+        ndarray: Resulting probabilistic map
     """
     return image / num
 
 
 def cost_update(floorplan, image, costs):
     """
-    Aggiorna i costi della mappa in base a una nuova immagine.
+    Updates the map costs based on a new image.
 
     Args:
-        floorplan: Mappa dei costi corrente
-        image: Nuova immagine da incorporare
-        costs: Matrice dei costi
+        floorplan: Current cost map
+        image: New image to incorporate
+        costs: Cost matrix
 
     Returns:
-        ndarray: Mappa dei costi aggiornata
+        ndarray: Updated cost map
     """
     HISTORICAL_WEIGHT = 0.8
     NEW_WEIGHT = 1 - HISTORICAL_WEIGHT
@@ -138,13 +138,13 @@ def cost_update(floorplan, image, costs):
 
 def cost_initialize(floorplan):
     """
-    Inizializza la matrice dei costi per una mappa.
+    Initializes the cost matrix for a map.
 
     Args:
-        floorplan: Mappa di base
+        floorplan: Base map
 
     Returns:
-        ndarray: Matrice dei costi inizializzata
+        ndarray: Initialized cost matrix
     """
     costs = np.zeros_like(floorplan, dtype=float)
     height, width = floorplan.shape
@@ -163,13 +163,13 @@ def cost_initialize(floorplan):
 
 def fill_holes(image):
     """
-    Riempie i buchi nella mappa usando operazioni morfologiche.
+    Fills holes in the map using morphological operations.
 
     Args:
-        image: Mappa con possibili buchi
+        image: Map with possible holes
 
     Returns:
-        ndarray: Mappa con i buchi riempiti
+        ndarray: Map with holes filled
     """
     contours, _ = cv2.findContours(image, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
     if len(contours) > 0:
@@ -182,15 +182,15 @@ def fill_holes(image):
 
 def init_floorplan(image, max_height, max_width):
     """
-    Inizializza una nuova mappa con dimensioni specificate.
+    Initializes a new map with specified dimensions.
 
     Args:
-        image: Immagine di base
-        max_height: Altezza massima
-        max_width: Larghezza massima
+        image: Base image
+        max_height: Maximum height
+        max_width: Maximum width
 
     Returns:
-        ndarray: Nuova mappa inizializzata
+        ndarray: New initialized map
     """
     floorplan = np.zeros((max_height, max_width), dtype=np.uint8)
     points = (max_width, max_height)
@@ -202,14 +202,14 @@ def init_floorplan(image, max_height, max_width):
 
 def update_floorplan(floorplan, image):
     """
-    Aggiorna una mappa esistente con nuove informazioni.
+    Updates an existing map with new information.
 
     Args:
-        floorplan: Mappa esistente
-        image: Nuova immagine da incorporare
+        floorplan: Existing map
+        image: New image to incorporate
 
     Returns:
-        ndarray: Mappa aggiornata
+        ndarray: Updated map
     """
     max_height, max_width = floorplan.shape
     points = (max_width, max_height)
@@ -448,7 +448,7 @@ def main():
 
     args = parse_args()
     base_dir = args.dir
-    output_dir = os.path.abspath(args.output_dir)  # Converti in percorso assoluto
+    output_dir = os.path.abspath(args.output_dir)  # Convert to absolute path
     gt_floorplan_path = args.gt_floorplan
     sample_test = args.sample_test
     step = args.step
@@ -461,7 +461,7 @@ def main():
             if os.path.splitext(f)[1] in MAP_EXTENSIONS:
                 max_size += 1
 
-    # Crea la directory di output se non esiste
+    # Create the output directory if it does not exist
     os.makedirs(output_dir, exist_ok=True)
 
     if not sample_test:
