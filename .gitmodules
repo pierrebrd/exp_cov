@@ -4,3 +4,6 @@
 [submodule "src/stage_ros2"]
 	path = src/stage_ros2
 	url = git@github.com:pierrebrd/stage_ros2.git
+[submodule "src/exploration_benchmarking"]
+	path = src/exploration_benchmarking
+	url = git@github.com:aislabunimi/exploration_benchmarking.git
