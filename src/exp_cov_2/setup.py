@@ -17,6 +17,6 @@ setup(
     description="ROS2 port of exp_cov by Davide Bertalero (d-ber)",
     license="TODO: License declaration",
     entry_points={
-        "console_scripts": [],
+        "console_scripts": ["distance_check = exp_cov_2.distance_check:main"],
     },
 )

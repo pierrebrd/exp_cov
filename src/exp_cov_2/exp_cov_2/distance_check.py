@@ -1,15 +1,22 @@
-# Needs to be ported
+# Ported to ROS2
+# Due to problem with the node shutdown in ROS2, I had to create a new node to log the final distance.
 
 #!/usr/bin/env python
-import rospy
+import rclpy
+from rclpy.node import Node
 from nav_msgs.msg import Odometry
 import math
-from signal import signal, SIGINT
 
-class Distance_check:
+
+class Distance_check(Node):
 
     def __init__(self):
-        self.sub = rospy.Subscriber("base_pose_ground_truth", Odometry, self.callback)
+        super().__init__("distance_check")
+        # TODO This node subscribes to /base_pose_ground_truth, I don't think it exists by default in ROS2
+        self.sub = self.create_subscription(
+            Odometry, "base_pose_ground_truth", self.callback, 10
+        )
+        self.get_logger().info("Subscribed to base_pose_ground_truth topic")
         self.total_distance = 0
         self.previous_x = 0
         self.previous_y = 0
@@ -22,24 +29,47 @@ class Distance_check:
             self.first_run = False
         x = data.pose.pose.position.x
         y = data.pose.pose.position.y
-        d_increment = math.dist((self.previous_x, self.previous_y), (x,y))
+        d_increment = math.dist((self.previous_x, self.previous_y), (x, y))
         self.total_distance = self.total_distance + d_increment
-        #print(f"Total distance traveled is {self.total_distance}")
+        # print(f"Total distance traveled is {self.total_distance}")
         self.previous_x = data.pose.pose.position.x
         self.previous_y = data.pose.pose.position.y
 
-def print_final_dist():
-    print(f"Final distance is {dist.total_distance}")
 
-def handler(a, b):
-    print_final_dist()
+class Distance_check_final_logger(Node):
+    def __init__(self, total_distance, context):
+        super().__init__("distance_check_final_logger", context=context)
+        self.get_logger().info(f"Final distance is {total_distance}")
+        # Shutdown
+        self.destroy_node()
 
-if __name__ == '__main__':
-    rospy.init_node('move_turtlebot', anonymous=True)
-    dist = Distance_check()
-    # spin() simply keeps python from exiting until this node is stopped
 
-    signal(SIGINT, handler)
-    rospy.on_shutdown(print_final_dist)
-    rospy.spin()
-    
+def main():
+    rclpy.init(args=None)
+    node = Distance_check()
+
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        print(f"Final distance is {node.total_distance}")
+        # We also include it in the ROS logs
+
+        # node.get_logger().info(f"Final distance is {node.total_distance}")
+        # It will probably fail, lets create a new context to log and then destroy it
+
+        new_context = rclpy.Context()
+        rclpy.init(context=new_context)
+        new_node = Distance_check_final_logger(node.total_distance, context=new_context)
+        rclpy.spin(new_node)
+
+        # Cleanup
+        if rclpy.ok():
+            node.destroy_node()
+            new_node.destroy_node()
+            rclpy.try_shutdown()
+
+
+if __name__ == "__main__":
+    main()

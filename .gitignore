@@ -10,3 +10,11 @@ src/exp_cov/world/world0.world
 src/exp_cov/world/bitmaps/image0.png
 src/exp_cov/world/bitmaps/rectangles0.json
 .qodo
+
+**/__pycache__/
+
+# exp_cov_2
+src/exp_cov_2/build/
+src/exp_cov_2/devel/
+src/exp_cov_2/log/
+src/exp_cov_2/install/
