@@ -1,9 +1,11 @@
 # Needs to be ported to ROS2
 
+# This is a more verbose and potentially improved version of run_explore_and_waypoint.py
+
 """
-Script to compare navigation based on exploration vs coverage using ROS and Stage.
+Script to compare navigation based on exploration vs coverage using ROS2 and Stage.
 Runs multiple experiments comparing two strategies:
-1. Exploration using explore_lite
+1. Exploration using explore_lite (ROS2 port m-explore-ros2)
 2. Coverage navigation using predefined waypoints
 
 For each test:
@@ -20,7 +22,7 @@ import cv2
 from PIL import Image
 import numpy as np
 import os
-import rospy
+import rclpy  # ROS2
 from time import gmtime, strftime, sleep
 
 """
@@ -70,14 +72,6 @@ def now():
     return strftime("%Y-%m-%d %H:%M:%S", gmtime())
 
 
-"""
-Runs exploration using explore_lite and saves the resulting map.
-@param logfile_path: Path to save logs
-@param run_subfolder: Subfolder for current test data
-@return: Time taken for exploration in seconds
-"""
-
-
 def run_expl(logfile_path, run_subfolder=""):
     start = None
     args = ["roslaunch", "exp_cov", "explore_lite2.launch"]
@@ -94,6 +88,7 @@ def run_expl(logfile_path, run_subfolder=""):
                 start = rospy.get_rostime().secs
                 logfile.write(f"{now()}: Starting exploration.\n")
                 for line in process.stdout:
+                    # TODO : may be better to look at /rosout ? Probably nat as we need a ros node to listen to rosout i guess
                     line = line.decode("utf8")
                     current_time = rospy.Time.now().secs
 
@@ -129,7 +124,7 @@ def run_expl(logfile_path, run_subfolder=""):
                             f"{now()}: Operation Timeout - {line.strip()}\n"
                         )
 
-                    if line.strip()[1:].startswith("["):
+                    if line.strip()[1:].startswith("["):  # TODO: WTF
                         if "exploration stopped." in line.lower():
                             logfile.write(f"{now()}: Finished exploration.\n")
                             break
@@ -284,6 +279,7 @@ def run_cov(waypoints, logfile_path="./coverage.log", run_subfolder=""):
                     return time
 
 
+# TODO: probably should use singlerun.py here
 """
 Sets up and runs the complete exploration process.
 Starts required ROS nodes (Stage, SLAM, distance checker)
