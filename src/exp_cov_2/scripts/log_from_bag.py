@@ -85,21 +85,16 @@ def should_log_message(msg, name):
         "waypoint sender started",
         "connected to move_base nav2 server",  # ROS2
         "sending goal",
-        "goal pose reached",
-        "found frontiers",
-        "visualising frontiers",
+        "was successful",
+        "was aborted",
+        "blacklist",
+        "black list",
+        "found frontiers",  # Not working
         "waiting for costmap",
     ]
 
     # Completely ignore certain types of messages
-    ignore_messages = [
-        "tf_repeated_data",
-        "getting status over the wire",
-        "debug",
-        "trying to publish",
-        "transitioning",
-        "received comm state",
-    ]
+    ignore_messages = []
 
     msg_lower = msg.lower()
     name_lower = name.lower()
@@ -127,10 +122,6 @@ def process_messages(messages, logfile_path, error_log_path, info_log_path):
     current_time = 0.0  # Initialize current time
     start_time = None
     end_time = None
-    last_message = None
-    last_message_time = 0
-
-    # previous_pose = None  # used to determine when the robot actually starts moving
 
     with open(logfile_path, mode="+a", encoding="utf-8") as logfile, open(
         error_log_path, mode="+a", encoding="utf-8"
@@ -203,42 +194,38 @@ def process_messages(messages, logfile_path, error_log_path, info_log_path):
                     name = data.name
                     level = data.level
 
-                    # Log all non-error information
-                    if not any(
-                        x in msg.lower() for x in ["error", "abort", "stuck", "timeout"]
-                    ):
-                        # Check if the message should be logged
-                        if should_log_message(msg, name):
-                            info_log.write(
-                                f"{format_time(timestamp/1_000_000_000)}: [{name}] {msg.strip()}\n"
-                            )
-                            last_message = msg.strip()
-                            last_message_time = current_time
+                    if should_log_message(msg, name):
+                        info_log.write(
+                            f"{format_time(timestamp/1_000_000_000)}: [{name}] {msg.strip()}\n"
+                        )
 
                     # Check for error conditions in the output
-                    if "error" in msg.lower() or level >= WARN_LEVEL:
+                    if "error" in msg.lower():
                         error_log.write(
                             f"{format_time(timestamp/1_000_000_000)}: Exploration Error - [{name}] {msg.strip()}\n"
                         )
-                    if "abort" in msg.lower():  # TODO Not sure it is useful
+                    elif "abort" in msg.lower():  # TODO Not sure it is useful
                         error_log.write(
                             f"{format_time(timestamp/1_000_000_000)}: Exploration Aborted - [{name}] {msg.strip()}\n"
                         )
-                    if "stuck" in msg.lower():  # TODO Not sure it is useful
+                    elif "stuck" in msg.lower():  # TODO Not sure it is useful
                         error_log.write(
                             f"{format_time(timestamp/1_000_000_000)}: Robot Stuck - [{name}] {msg.strip()}\n"
                         )
-                    if "timeout" in msg.lower():  # TODO Not sure it is useful
+                    elif "timeout" in msg.lower():  # TODO Not sure it is useful
                         error_log.write(
                             f"{format_time(timestamp/1_000_000_000)}: Operation Timeout - [{name}] {msg.strip()}\n"
                         )
+                    elif level >= WARN_LEVEL:
+                        error_log.write(
+                            f"{format_time(timestamp/1_000_000_000)}: Geneneric error - [{name}] {msg.strip()}\n"
+                        )
 
-                    if msg.strip()[1:].startswith("["):  # TODO: WTF
-                        if "exploration stopped." in msg.lower():
-                            logfile.write(
-                                f"{format_time(timestamp/1_000_000_000)}: Finished exploration : [{name}] {msg.strip()}.\n"
-                            )
-                            break
+                    if "exploration stopped." in msg.lower():
+                        logfile.write(
+                            f"{format_time(timestamp/1_000_000_000)}: Finished exploration : [{name}] {msg.strip()}.\n"
+                        )
+                        break
 
             logfile.write(
                 f"Exploration ends at sim time {end_time}, lasting {end_time - start_time}.\n"
@@ -259,7 +246,7 @@ def main():
     global verbose
 
     args = parse_args()
-    run_path = args.run_path
+    run_path = os.path.abspath(args.run_path)
     verbose = args.verbose
 
     bag_path = os.path.join(run_path, "rosbags/")
@@ -277,14 +264,6 @@ def main():
     robot_path, goals, start_time, end_time = process_messages(
         messages, logfile_path, error_log_path, info_log_path
     )
-
-    # print(goals)
-    # print(start_time, end_time)
-    # if start_time and end_time:
-    #     print(
-    #         f"Exploration started at {start_time}s and ended at {end_time}s, "
-    #         f"total duration: {end_time - start_time}s"
-    #     )
 
     # TODO: add ape and rpe stats to the log files
     ape_stats, rpe_stats = evo_metrics(
