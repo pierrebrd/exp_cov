@@ -1,0 +1,66 @@
+map_saver_interval: 60
+rviz_config: rviz/explore-lite.rviz
+rosbag2_recorded_topics:
+- /odom
+- /ground_truth
+- /cmd_vel
+- /rosout
+- /goal_sent
+- /goal_reached
+- /clock
+- /scan
+- /tf
+- /tf_static
+world_name: world9
+worlds_folder: ../../exp_cov_2/worlds
+slam:
+    package: slam_toolbox
+    name: online_async_launch.py
+    is_launch_file: true
+    params_file_argument: slam_params_file
+    launchfile_args:
+        use_sim_time: 'true'
+        autostart: 'true'
+    ros_args: []
+    params_file: ../../exp_cov_2/params/slam/slam_toolbox_exp_cov.yaml
+navigation:
+    package: nav2_bringup
+    name: navigation_launch.py
+    is_launch_file: true
+    params_file_argument: params_file
+    ros_args: []
+    launchfile_args:
+        use_sim_time: 'true'
+        autostart: 'true'
+        log_level: info
+    params_file: ../../exp_cov_2/params/navigation/nav2_params.yaml
+exploration:
+    package: explore_lite
+    name: explore
+    is_launch_file: false
+    params_file_argument: ''
+    launchfile_args: {}
+    ros_args:
+    - --log-level
+    - info
+    - --log-level
+    - rcl:=warn
+    params_file: ../../exp_cov_2/params/exploration/explore_lite_params_exp_cov.yaml
+simulation:
+    package: stage_ros2
+    name: stage.launch.py
+    is_launch_file: true
+    params_file_argument: ''
+    launchfile_args:
+        enforce_prefixes: 'false'
+        use_static_transformations: 'true'
+        one_tf_tree: 'false'
+    ros_args: []
+    params_file: ''
+additional_processes:
+-   package: exp_cov_2
+    name: laser_scan_check
+    is_launch_file: false
+-   package: exp_cov_2
+    name: distance_check
+    is_launch_file: false

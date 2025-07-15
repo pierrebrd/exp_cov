@@ -32,7 +32,7 @@ class Laser_scan_check(Node):
                     + data.ranges.index(self.min_distance) * data.angle_increment
                 )  # Get the angle of the closest obstacle
                 self.get_logger().warn(
-                    f"Too close to an obstacle, current distance is {self.min_distance} at angle {angle}, total triggered: {self.total_triggered} times"
+                    f"Too close to an obstacle, current distance is {self.min_distance:.3f} at angle {angle:.3f}, total triggered: {self.total_triggered} times"
                 )
 
         else:  # currently_triggered is True
@@ -50,7 +50,7 @@ class Laser_scan_check(Node):
                 )  # Get the angle of the closest obstacle
 
                 self.get_logger().warn(
-                    f"Too close to an obstacle, current distance is {self.min_distance} at angle {angle}, total triggered: {self.total_triggered} times"
+                    f"Too close to an obstacle, current distance is {self.min_distance:.3f} at angle {angle:.3f}, total triggered: {self.total_triggered} times"
                 )
 
 

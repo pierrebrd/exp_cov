@@ -78,5 +78,10 @@ simulation:
     ros_args: []
     PARAMS_FILE: [""]
 
-additional_processes: [] # List of other nodes or launch files to run. The list containes dicts, with keys "package", "name", ...
-
+additional_processes: # List of other nodes or launch files to run. The list containes dicts, with keys "package", "name", ...
+    - package: "exp_cov_2"
+      name: "laser_scan_check"
+      is_launch_file: false
+    - package: "exp_cov_2"
+      name: "distance_check"
+      is_launch_file: false
