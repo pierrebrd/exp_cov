@@ -3,6 +3,7 @@ devel/
 log/
 .vscode/c_cpp_properties.json
 .vscode/settings.json
+.vscode/browse.*
 .catkin_workspace
 src/exp_cov/world/bitmaps/image.png
 src/exp_cov/world/bitmaps/rectangles.json

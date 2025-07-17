@@ -91,6 +91,8 @@ def should_log_message(msg, name):
         "black list",
         "found frontiers",  # Not working
         "waiting for costmap",
+        "final distance",  # distance_check
+        "too close to an obstacle",  # laser_scan_check
     ]
 
     # Completely ignore certain types of messages
@@ -266,20 +268,20 @@ def main():
     )
 
     # TODO: add ape and rpe stats to the log files
-    ape_stats, rpe_stats = evo_metrics(
-        run_path, "/ground_truth", "/tf:map.base_link", plot=False, align_origin=False
-    )
-    if ape_stats:
-        print("APE stats:")
-        print(ape_stats)
-    else:
-        print("No APE stats available or an error occurred.")
+    # ape_stats, rpe_stats = evo_metrics(
+    #     run_path, "/ground_truth", "/tf:map.base_link", plot=False, align_origin=False
+    # )
+    # if ape_stats:
+    #     print("APE stats:")
+    #     print(ape_stats)
+    # else:
+    #     print("No APE stats available or an error occurred.")
 
-    if rpe_stats:
-        print("RPE stats:")
-        print(rpe_stats)
-    else:
-        print("No RPE stats available or an error occurred.")
+    # if rpe_stats:
+    #     print("RPE stats:")
+    #     print(rpe_stats)
+    # else:
+    #     print("No RPE stats available or an error occurred.")
 
 
 if __name__ == "__main__":

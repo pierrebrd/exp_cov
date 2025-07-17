@@ -71,3 +71,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# TODO: Log location when obstacle is detected? Location of the robot (corrected odom) or the object (from odom and laser scan i guess)
