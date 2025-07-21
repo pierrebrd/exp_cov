@@ -5,7 +5,9 @@ import cv2
 import argparse
 import os
 from python_tsp.exact import solve_tsp_dynamic_programming
-#from python_tsp.heuristics import solve_tsp_local_search, solve_tsp_simulated_annealing
+
+# from python_tsp.heuristics import solve_tsp_local_search, solve_tsp_simulated_annealing
+
 
 def check_positive_float(value):
     try:
@@ -16,18 +18,37 @@ def check_positive_float(value):
         raise Exception(f"{value} is not a float")
     return value
 
+
 def parse_args():
 
-    parser = argparse.ArgumentParser(description='Compute data to run optimization.')
-    parser.add_argument('--data', default=os.path.join(os.getcwd(), "data.dat"),
-        help="Path to the text data file.", metavar="DATA_PATH")
-    parser.add_argument('--guards', default=os.path.join(os.getcwd(), "guards.txt"),
-        help="Path to the text guards file.", metavar="GUARDS_PATH")
-    parser.add_argument('--img', default=os.path.join(os.getcwd(), "image.png"),
-        help="Path to the png image file.", metavar="IMG_PATH")
-    parser.add_argument('--scale', default=1, type=check_positive_float,
-        help="Image scale.", metavar="SCALE")
+    parser = argparse.ArgumentParser(description="Compute data to run optimization.")
+    parser.add_argument(
+        "--data",
+        default=os.path.join(os.getcwd(), "data.dat"),
+        help="Path to the text data file.",
+        metavar="DATA_PATH",
+    )
+    parser.add_argument(
+        "--guards",
+        default=os.path.join(os.getcwd(), "guards.txt"),
+        help="Path to the text guards file.",
+        metavar="GUARDS_PATH",
+    )
+    parser.add_argument(
+        "--img",
+        default=os.path.join(os.getcwd(), "image.png"),
+        help="Path to the png image file.",
+        metavar="IMG_PATH",
+    )
+    parser.add_argument(
+        "--scale",
+        default=1,
+        type=check_positive_float,
+        help="Image scale.",
+        metavar="SCALE",
+    )
     return parser.parse_args()
+
 
 def main():
 
@@ -67,7 +88,10 @@ def main():
         while line.strip() != ";":
             n_guardia = float(line.strip().split()[0])
             if n_guardia in guardie_scelte:
-                pos_guardie[guardie_scelte.index(n_guardia)] = line.strip().split()[1], line.strip().split()[2]
+                pos_guardie[guardie_scelte.index(n_guardia)] = (
+                    line.strip().split()[1],
+                    line.strip().split()[2],
+                )
             line = data_file.readline()
     distanze_scelte = []
     for g1 in range(len(distanze)):
@@ -77,11 +101,11 @@ def main():
                 if g2 in guardie_scelte:
                     distanze_g1.append(distanze[g1][g2])
             distanze_scelte.append(distanze_g1)
-        
+
     distance_matrix = np.array(distanze_scelte, dtype=float)
     permutation, _ = solve_tsp_dynamic_programming(distance_matrix)
-    #permutation, _ = solve_tsp_simulated_annealing(distance_matrix)
-    #permutation2, _ = solve_tsp_local_search(
+    # permutation, _ = solve_tsp_simulated_annealing(distance_matrix)
+    # permutation2, _ = solve_tsp_local_search(
     #    distance_matrix, x0=permutation, perturbation_scheme="ps3"
     #    )
 
@@ -90,17 +114,22 @@ def main():
     image_width = img.shape[1]
     image_height = img.shape[0]
     sizex = img.shape[0]
-    sizex = sizex/(1/scale)
+    sizex = sizex / (1 / scale)
     sizey = img.shape[1]
-    sizey = sizey/(1/scale)
+    sizey = sizey / (1 / scale)
     size_width = sizey
     size_height = sizex
 
     for p in permutation:
-        x, y  = pos_guardie[p]
-        stage_x = (-size_width/2) + ((size_width/2 - (-size_width/2)) / (image_width - 0)) * (int(x) - 0)
-        stage_y = (-size_height/2) + ((size_height/2 - (-size_height/2)) / (image_height - 0)) * ((image_height-int(y)) - 0)
+        x, y = pos_guardie[p]
+        stage_x = (-size_width / 2) + (
+            (size_width / 2 - (-size_width / 2)) / (image_width - 0)
+        ) * (int(x) - 0)
+        stage_y = (-size_height / 2) + (
+            (size_height / 2 - (-size_height / 2)) / (image_height - 0)
+        ) * ((image_height - int(y)) - 0)
         print(f"{stage_x}, {stage_y}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

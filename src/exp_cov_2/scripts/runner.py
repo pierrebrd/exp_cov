@@ -91,7 +91,7 @@ def parse_args():
         "--pose",
         type=check_pose,
         default=(0.0, 0.0),
-        help="Coordinate X e Y della posa del robot come due numeri (es: '-5.0 -5.0')",
+        help="Robot pose X and Y coordinates as two numbers (e.g., '-5.0 -5.0')",
     )
 
     # fuse_maps_floorplan arguments
@@ -142,67 +142,65 @@ def parse_args():
 
 def run_command(command, error_msg):
     try:
-        print(f"\nEsecuzione comando: {' '.join(command)}\n")
+        print(f"\nExecuting command: {' '.join(command)}\n")
         subprocess.run(command, check=True)
-        print(f"\nCompletato con successo\n\n")
+        print(f"\nCompleted successfully\n\n")
     except subprocess.CalledProcessError as e:
-        print(f"\nErrore: {error_msg}")
-        print(f"Comando fallito: {' '.join(command)}")
-        print(f"Codice di uscita: {e.returncode}")
+        print(f"\nError: {error_msg}")
+        print(f"Command failed: {' '.join(command)}")
+        print(f"Exit code: {e.returncode}")
         sys.exit(1)
 
 
 def run_ampl_solver(model_path, data_path, solution_dir):
     """
-    Risolve il problema di ottimizzazione usando AMPL con CPLEX attraverso amplpy
+    Solves the optimization problem using AMPL with CPLEX via amplpy
 
     Args:
-        model_path: Percorso al file .mod
-        data_path: Percorso al file .dat
-        solution_dir: Directory dove salvare i risultati
+        model_path: Path to the .mod file
+        data_path: Path to the .dat file
+        solution_dir: Directory where results will be saved
     """
 
     try:
-        # Inizializza AMPL
+        # Initialize AMPL
         ampl = AMPL()
 
-        # Carica il modello e i dati
-        ampl.read(str(model_path))  # Carica il file .mod
-        ampl.readData(str(data_path))  # Carica il file .dat
+        # Load model and data
+        ampl.read(str(model_path))  # Load .mod file
+        ampl.readData(str(data_path))  # Load .dat file
 
-        # Imposta il solver su CPLEX
+        # Set solver to CPLEX
         ampl.setOption("solver", "cplex")
 
-        # Risolvi il modello
+        # Solve the model
         ampl.solve()
 
-        # Verifica che la soluzione sia ottima
+        # Verify that the solution is optimal
         if ampl.getValue("solve_result") != "solved":
-            raise Exception(f"Errore nella soluzione: {ampl.getValue('solve_result')}")
+            raise Exception(f"Error in solution: {ampl.getValue('solve_result')}")
 
-        # Ottieni la variabile guard_choice
+        # Get the guard_choice variable
         guard_choice = ampl.getVariable("guard_choice")
 
-        # Salva solo i valori non nulli
+        # Save only non-zero values
         output_path = os.path.join(solution_dir, "chosen_guards.txt")
         with open(output_path, "w") as f:
             f.write("guard_choice [*] :=\n")
-            # Itera sulle istanze in modo corretto
+            # Iterate over instances correctly
             for i in range(1, guard_choice.numInstances() + 1):
                 try:
                     val = guard_choice[i].value()
-                    if (
-                        val > 0.5
-                    ):  # Per gestire errori di arrotondamento nelle variabili binarie
+                    if val > 0.5:  # To handle rounding errors in binary variables
                         f.write(f"{i} 1\n")
                 except KeyError:
                     continue
             f.write(";\n")
 
-        print(f"Soluzione salvata in {output_path}")
+        print(f"Solution saved to {output_path}")
 
     except Exception as e:
-        print(f"Errore durante l'esecuzione di AMPL: {str(e)}")
+        print(f"Error during AMPL execution: {str(e)}")
         raise
 
 
@@ -218,7 +216,7 @@ def main():
 
     for name, path in required_files.items():
         if not path.exists():
-            print(f"Errore: {name} non trovato in: {path}")
+            print(f"Error: {name} not found at: {path}")
             sys.exit(1)
 
     # Create directories
@@ -234,6 +232,7 @@ def main():
     os.makedirs(solution_dir, exist_ok=True)
     os.makedirs(runs_dir, exist_ok=True)
 
+    # Script execution
     # Script execution
     print(f"Creating maps")
     map_cmd = [
@@ -254,7 +253,7 @@ def main():
         "--scale",
         str(args.scale),
     ]
-    run_command(map_cmd, "Generazione mappe fallita")
+    run_command(map_cmd, "Map generation failed")
 
     print(f"Merging maps")
     fuse_cmd = [
@@ -265,7 +264,7 @@ def main():
         "--output-dir",
         str(solution_dir),
     ]
-    run_command(fuse_cmd, "Fusione mappe fallita")
+    run_command(fuse_cmd, "Map fusion failed")
 
     print(f"Generating optimization data")
     opt_data_cmd = [
@@ -282,7 +281,7 @@ def main():
         "--witnesses",
         str(args.witnesses),
     ]
-    run_command(opt_data_cmd, "Generazione dati ottimizzazione fallita")
+    run_command(opt_data_cmd, "Optimization data generation failed")
 
     print(f"Solving linear problem with cplex")
     try:
@@ -290,7 +289,7 @@ def main():
             args.model, os.path.join(solution_dir, "data.dat"), solution_dir
         )
     except Exception as e:
-        print(f"Errore nell'ottimizzazione AMPL: {e}")
+        print(f"AMPL optimization error: {e}")
         sys.exit(1)
 
     print(f"Calculating path")
@@ -308,9 +307,9 @@ def main():
         "--output",
         str(os.path.join(solution_dir, "waypoints.csv")),
     ]
-    run_command(tsp_cmd, "Calcolo TSP fallito")
+    run_command(tsp_cmd, "TSP calculation failed")
 
-    print(f"Running runs")
+    print(f"Running exploration")
     explore_cmd = [
         "python3",
         "logged_run.py",
@@ -323,11 +322,11 @@ def main():
         "--dir",
         str(runs_dir),
     ]
-    run_command(explore_cmd, "Esplorazione e waypoints falliti")
+    run_command(explore_cmd, "Exploration and waypoints failed")
 
     print("\nWorkflow completed successfully!")
     print(f"Results saved in: {dest_dir}")
-    print(f"Soluzioni in: {solution_dir}")
+    print(f"Solutions in: {solution_dir}")
     print(f"Exploration runs in: {runs_dir}")
 
 
