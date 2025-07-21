@@ -10,6 +10,7 @@ src/exp_cov/world/bitmaps/rectangles.json
 src/exp_cov/world/world0.world
 src/exp_cov/world/bitmaps/image0.png
 src/exp_cov/world/bitmaps/rectangles0.json
+src/exp_cov_2/scripts/tmp/
 .qodo
 
 **/__pycache__/
