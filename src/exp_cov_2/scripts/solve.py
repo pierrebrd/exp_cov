@@ -23,27 +23,29 @@ def parse_args():
 
 def write_results(
     output_file,
+    shell_output_file,
     ampl,
 ):
-    with open(output_file, "w") as f:
-        solve_result = ampl.get_value("solve_result")
-        objective = ampl.get_value("z")
-        nG = ampl.get_parameter("nG").value()
-        nW = ampl.get_parameter("nW").value()
-        guards_chosen = sum(
-            ampl.get_variable("guard_choice").get_values().to_dict().values()
-        )
-        witnesses_covered = sum(
-            ampl.get_variable("covered").get_values().to_dict().values()
-        )
-        guard_choice = ampl.get_variable("guard_choice").get_values().to_dict()
-        guard_cost = ampl.get_parameter("guard_cost").get_values().to_dict()
-        coverage = ampl.get_parameter("coverage").get_values().to_dict()
-        covered = ampl.get_variable("covered").get_values().to_dict()
-        Guards = ampl.get_set("Guards").to_list()
-        Witnesses = ampl.get_set("Witnesses").to_list()
-        distance = ampl.get_parameter("distance").get_values().to_dict()
 
+    solve_result = ampl.get_value("solve_result")
+    objective = ampl.get_value("z")
+    nG = ampl.get_parameter("nG").value()
+    nW = ampl.get_parameter("nW").value()
+    guards_chosen = sum(
+        ampl.get_variable("guard_choice").get_values().to_dict().values()
+    )
+    witnesses_covered = sum(
+        ampl.get_variable("covered").get_values().to_dict().values()
+    )
+    guard_choice = ampl.get_variable("guard_choice").get_values().to_dict()
+    guard_cost = ampl.get_parameter("guard_cost").get_values().to_dict()
+    coverage = ampl.get_parameter("coverage").get_values().to_dict()
+    covered = ampl.get_variable("covered").get_values().to_dict()
+    Guards = ampl.get_set("Guards").to_list()
+    Witnesses = ampl.get_set("Witnesses").to_list()
+    distance = ampl.get_parameter("distance").get_values().to_dict()
+
+    with open(output_file, "w") as f:
         f.write(f"=== COVERAGE OPTIMIZATION RESULTS ===\n")
         f.write(f"Solve status: {solve_result}\n")
         f.write(f"Objective value: {objective:.6f}\n")
@@ -75,6 +77,20 @@ def write_results(
             f.write(" ".join(covering_guards) + " ")
             status = "YES" if covered.get(w, 0) > 0.5 else "NO"
             f.write(f"(covered: {status})\n")
+
+    # Now we write the outputs in the ampl shell format
+    with open(shell_output_file, "w") as f:
+        output = ampl.get_output(
+            f"""
+                option display_eps 1e-5;
+                display _solve_time;
+                option omit_zero_rows 1;
+                option display_1col 11110;
+                display guard_choice;
+                display covered;
+                """
+        )
+        f.write(output)
 
 
 def main():
@@ -118,11 +134,13 @@ def main():
 
         # Generate output filename based on model type and timestamp
         timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M")
-        output_file = os.path.join(output_dir, f"solving_results_{timestamp}.txt")
+        output_file = os.path.join(output_dir, f"output_{timestamp}.txt")
+        shell_output_file = os.path.join(output_dir, f"shell_output_{timestamp}.txt")
 
         # Write results
         write_results(
             output_file,
+            shell_output_file,
             ampl,
         )
 
@@ -130,7 +148,6 @@ def main():
 
     else:
         print(f"Optimization failed: {solve_result}")
-
     ampl.close()
 
 
