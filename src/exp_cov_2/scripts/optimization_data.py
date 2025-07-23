@@ -37,23 +37,23 @@ def print_bidimensional_param(file, name, rows, cols, vals):
     file.write(";\n")
 
 
-def copertura_w(copertura_w_data):
+def coverage_w(coverage_w_data):
     MAX_VISIBILITY_RANGE = 10000
-    i, poly, w, guards = copertura_w_data
-    copertura_w = []
+    i, poly, w, guards = coverage_w_data
+    coverage_w = []
     for j, g in enumerate(guards):
         seg = shapely.LineString([g, w])
         if poly.contains(seg) and seg.length < MAX_VISIBILITY_RANGE:
-            copertura_w.insert(j, 1)
+            coverage_w.insert(j, 1)
         else:
-            copertura_w.insert(j, 0)
-    return (i, copertura_w)
+            coverage_w.insert(j, 0)
+    return (i, coverage_w)
 
 
-def distanza_gg(distanze_gg_data):
+def distance_gg(distance_gg_data):
     # TODO: I dont know if it's a normal behavior, but the distance between a guard and itself is 1. Also, we compute distances for each pair twice...
-    dis_gg = []
-    i, g1, guards, pathfinding_matrix = distanze_gg_data
+    dist_gg = []
+    i, g1, guards, pathfinding_matrix = distance_gg_data
     finder = AStarFinder(diagonal_movement=DiagonalMovement.always)
     pathfinding_grid = Grid(matrix=pathfinding_matrix)
     g1_x, g1_y = g1
@@ -63,8 +63,8 @@ def distanza_gg(distanze_gg_data):
         g2_x, g2_y = g2
         end = pathfinding_grid.node(g2_x, g2_y)
         path, _ = finder.find_path(start, end, pathfinding_grid)
-        dis_gg.insert(i2, len(path))
-    return (i, dis_gg)
+        dist_gg.insert(i2, len(path))
+    return (i, dist_gg)
 
 
 def min_distance_to_holes(poly_with_holes, point):
@@ -120,16 +120,16 @@ def print_dat(
     print_simple_param(output_file, "nW", nW)
     print_simple_param(output_file, "nG", nG)
 
-    copertura = []
-    copribili = 0
+    coverage = []
+    coverable = 0
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        copertura_w_data = [(i, poly, w, guards) for i, w in enumerate(witnesses)]
-        for i, cop_w in executor.map(copertura_w, copertura_w_data):
-            copertura.insert(i, cop_w)
-            if any(cop_w):
-                copribili += 1
+        coverage_w_data = [(i, poly, w, guards) for i, w in enumerate(witnesses)]
+        for i, cov_w in executor.map(coverage_w, coverage_w_data):
+            coverage.insert(i, cov_w)
+            if any(cov_w):
+                coverable += 1
 
-    min_coverage = min(coverage, (copribili / nW) - 0.1)
+    min_coverage = min(coverage, (coverable / nW) - 0.1)
     print_simple_param(output_file, "min_coverage", min_coverage)
 
     guard_costs = []
@@ -149,16 +149,16 @@ def print_dat(
 
     print_vector_param(output_file, "guard_cost", guard_costs)
 
-    print_bidimensional_param(output_file, "coverage", nW, nG, copertura)
+    print_bidimensional_param(output_file, "coverage", nW, nG, coverage)
 
-    distanze = []
+    distances = []
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        distanze_gg_data = [
+        distance_gg_data = [
             (i, g1, guards, pathfinding_matrix) for i, g1 in enumerate(guards)
         ]
-        for i, dis_gg in executor.map(distanza_gg, distanze_gg_data):
-            distanze.insert(i, dis_gg)
-    print_bidimensional_param(output_file, "distance", nG, nG, distanze)
+        for i, dist_gg in executor.map(distance_gg, distance_gg_data):
+            distances.insert(i, dist_gg)
+    print_bidimensional_param(output_file, "distance", nG, nG, distances)
 
     output_file.write("\nend;\n")
 
