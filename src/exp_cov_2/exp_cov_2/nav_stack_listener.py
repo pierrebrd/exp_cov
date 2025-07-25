@@ -11,6 +11,7 @@ from nav2_msgs.action._navigate_to_pose import (
     NavigateToPose_Result,
     NavigateToPose_FeedbackMessage,
 )
+from nav2_msgs.action._back_up import BackUp_FeedbackMessage
 from action_msgs.msg import GoalStatusArray, GoalStatus, GoalInfo
 import nav2_msgs.msg
 from geometry_msgs.msg import PoseStamped
@@ -27,6 +28,17 @@ class GoalInfo:
         self.estimated_time_remaining = None
         self.navigation_time = None
         self.current_pose = PoseStamped()  # Initialize with an empty PoseStamped
+        self.backup_distance = None
+        self.backup_status = 0  # UNKNOWN
+
+
+class BackupGoalInfo:
+    """Class to hold information about a backup navigation goal."""
+
+    def __init__(self, goal_id):
+        self.goal_id = goal_id
+        self.status = 0  # UNKNOWN
+        self.distance_traveled = None
 
 
 class Nav_stack_listener(Node):
@@ -35,7 +47,8 @@ class Nav_stack_listener(Node):
         # self.logs_sub = self.create_subscription(Log, "rosout", self.logs_callback, 10)
         # self.get_logger().info("Subscribed to rosout topic")
 
-        self.goals_status = {}  # Dictionary to hold goal information
+        self.goals_info = {}  # Dictionary to hold goal information
+        self.backup_goals_info = {}  # Dictionary to hold backup goal information
 
         # Subscribe to NavigateToPose action feedback and status
         self.nav_feedback_sub = self.create_subscription(
@@ -52,6 +65,20 @@ class Nav_stack_listener(Node):
             10,
         )
 
+        self.nav_backup_feedback_sub = self.create_subscription(
+            BackUp_FeedbackMessage,
+            "/backup/_action/feedback",
+            self.nav_backup_feedback_callback,
+            10,
+        )
+
+        self.nav_backup_status_sub = self.create_subscription(
+            GoalStatusArray,
+            "/backup/_action/status",
+            self.nav_backup_status_callback,
+            10,
+        )
+
         self.get_logger().info(
             "Subscribed to NavigateToPose action feedback and status topics"
         )
@@ -65,11 +92,11 @@ class Nav_stack_listener(Node):
         # Convert goal id bytes to hex string for logging
         goal_id_str = msg.goal_id.uuid.tobytes().hex()
 
-        if goal_id_str not in self.goals_status:
+        if goal_id_str not in self.goals_info:
             # If this is a new goal, initialize its info
-            self.goals_status[goal_id_str] = GoalInfo(goal_id_str)
+            self.goals_info[goal_id_str] = GoalInfo(goal_id_str)
 
-        goal_info = self.goals_status[goal_id_str]
+        goal_info = self.goals_info[goal_id_str]
         new_current_pose = feedback._current_pose
 
         if feedback.number_of_recoveries > goal_info.recoveries:
@@ -93,11 +120,11 @@ class Nav_stack_listener(Node):
             assert isinstance(status, GoalStatus)  # TODO: remove
             goal_id_str = status.goal_info.goal_id.uuid.tobytes().hex()
 
-            if goal_id_str not in self.goals_status:
+            if goal_id_str not in self.goals_info:
                 # If this is a new goal, initialize its info
-                self.goals_status[goal_id_str] = GoalInfo(goal_id_str)
+                self.goals_info[goal_id_str] = GoalInfo(goal_id_str)
 
-            goal_info = self.goals_status[goal_id_str]
+            goal_info = self.goals_info[goal_id_str]
             assert isinstance(goal_info, GoalInfo)  # TODO: remove
             assert isinstance(goal_info.current_pose, PoseStamped)  # TODO: remove
 
@@ -120,6 +147,57 @@ class Nav_stack_listener(Node):
                 else:
                     self.get_logger().info(
                         f"Goal {goal_id_str[:8]}... status changed from {self.get_status_text(goal_info.status)} to {self.get_status_text(status.status)}"
+                    )
+                # We update the goal status
+                goal_info.status = status.status
+
+    def nav_backup_feedback_callback(self, msg: BackUp_FeedbackMessage):
+        feedback = msg.feedback
+
+        # Convert goal id bytes to hex string for logging
+        goal_id_str = msg.goal_id.uuid.tobytes().hex()
+
+        if goal_id_str not in self.backup_goals_info:
+            # If this is a new goal, initialize its info
+            self.backup_goals_info[goal_id_str] = BackupGoalInfo(goal_id_str)
+
+        goal_info = self.backup_goals_info[goal_id_str]
+
+        # We just update the distance traveled
+        goal_info.distance_traveled = feedback.distance_traveled
+
+    def nav_backup_status_callback(self, msg: GoalStatusArray):
+        for status in msg.status_list:
+            assert isinstance(status, GoalStatus)  # TODO: remove
+            goal_id_str = status.goal_info.goal_id.uuid.tobytes().hex()
+
+            if goal_id_str not in self.backup_goals_info:
+                # If this is a new goal, initialize its info
+                self.backup_goals_info[goal_id_str] = BackupGoalInfo(goal_id_str)
+
+            goal_info = self.backup_goals_info[goal_id_str]
+
+            if goal_info.status != status.status:
+                # Log the status change
+
+                if status.status == GoalStatus.STATUS_SUCCEEDED:
+                    self.get_logger().info(
+                        f"Backup Goal {goal_id_str[:8]}... has SUCCEEDED, distance traveled: {goal_info.distance_traveled}"
+                    )
+
+                elif status.status == GoalStatus.STATUS_ABORTED:
+                    self.get_logger().warn(
+                        f"Backup Goal {goal_id_str[:8]}... has been ABORTED, distance traveled: {goal_info.distance_traveled}"
+                    )
+
+                elif status.status == GoalStatus.STATUS_CANCELED:
+                    self.get_logger().warn(
+                        f"Backup Goal {goal_id_str[:8]}... has been CANCELED, distance traveled: {goal_info.distance_traveled}"
+                    )
+
+                else:
+                    self.get_logger().info(
+                        f"Backup Goal {goal_id_str[:8]}... status changed from {self.get_status_text(goal_info.status)} to {self.get_status_text(status.status)}"
                     )
                 # We update the goal status
                 goal_info.status = status.status
