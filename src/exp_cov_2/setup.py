@@ -20,6 +20,7 @@ setup(
         "console_scripts": [
             "distance_check = exp_cov_2.distance_check:main",
             "laser_scan_check = exp_cov_2.laser_scan_check:main",
+            "nav_stack_listener = exp_cov_2.nav_stack_listener:main",
         ],
     },
 )
