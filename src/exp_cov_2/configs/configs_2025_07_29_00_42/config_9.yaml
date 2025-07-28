@@ -64,3 +64,6 @@ additional_processes:
 -   package: exp_cov_2
     name: distance_check
     is_launch_file: false
+-   package: exp_cov_2
+    name: nav_stack_listener
+    is_launch_file: false
