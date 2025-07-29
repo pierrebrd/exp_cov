@@ -11,7 +11,7 @@ rosbag2_recorded_topics:
 - /scan
 - /tf
 - /tf_static
-world_name: world9
+world_name: world3
 worlds_folder: ../../exp_cov_2/worlds
 slam:
     package: slam_toolbox
@@ -61,6 +61,8 @@ additional_processes:
 -   package: exp_cov_2
     name: laser_scan_check
     is_launch_file: false
+    other_params:
+        distance_threshold: 0.6
 -   package: exp_cov_2
     name: distance_check
     is_launch_file: false

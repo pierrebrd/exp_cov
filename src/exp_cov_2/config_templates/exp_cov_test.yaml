@@ -82,6 +82,8 @@ additional_processes: # List of other nodes or launch files to run. The list con
     - package: "exp_cov_2"
       name: "laser_scan_check"
       is_launch_file: false
+      other_params:
+          distance_threshold: 0.6
     - package: "exp_cov_2"
       name: "distance_check"
       is_launch_file: false

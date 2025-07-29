@@ -11,13 +11,21 @@ class Laser_scan_check(Node):
 
     def __init__(self):
         super().__init__("laser_scan_check")
+
+        # Declare parameter for distance threshold
+        self.declare_parameter("distance_threshold", 1.0)
+
         self.sub = self.create_subscription(LaserScan, "scan", self.callback, 10)
         self.get_logger().info("Subscribed to scan topic")
         self.currently_triggered = False
         self.total_triggered = 0
+
+        # Get the distance threshold from parameter
         self.distance_threshold = (
-            1.0  # Set the distance threshold TODO: set by a parameter
+            self.get_parameter("distance_threshold").get_parameter_value().double_value
         )
+        self.get_logger().info(f"Distance threshold set to: {self.distance_threshold}")
+
         self.min_distance = float("inf")
 
     def callback(self, data: LaserScan):
