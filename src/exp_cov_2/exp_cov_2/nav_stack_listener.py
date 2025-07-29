@@ -70,9 +70,7 @@ class WaitGoalInfo:
         self.goal_id = goal_id
         self.status = 0  # UNKNOWN
         self.time_left = -1.0
-        self.clock = None
         self.initial_time_left = None
-        self.initial_clock = None
 
 
 class Nav_stack_listener(Node):
@@ -205,7 +203,6 @@ class Nav_stack_listener(Node):
 
     def nav_status_callback(self, msg: GoalStatusArray):
         for status in msg.status_list:
-            assert isinstance(status, GoalStatus)  # TODO: remove
             goal_id_str = status.goal_info.goal_id.uuid.tobytes().hex()
 
             if goal_id_str not in self.goals_info:
@@ -213,8 +210,6 @@ class Nav_stack_listener(Node):
                 self.goals_info[goal_id_str] = GoalInfo(goal_id_str)
 
             goal_info = self.goals_info[goal_id_str]
-            assert isinstance(goal_info, GoalInfo)  # TODO: remove
-            assert isinstance(goal_info.current_pose, PoseStamped)  # TODO: remove
 
             if goal_info.status != status.status:
                 # Log the status change
@@ -256,7 +251,6 @@ class Nav_stack_listener(Node):
 
     def nav_backup_status_callback(self, msg: GoalStatusArray):
         for status in msg.status_list:
-            assert isinstance(status, GoalStatus)  # TODO: remove
             goal_id_str = status.goal_info.goal_id.uuid.tobytes().hex()
 
             if goal_id_str not in self.backup_goals_info:
@@ -308,7 +302,6 @@ class Nav_stack_listener(Node):
 
     def nav_follow_path_status_callback(self, msg: GoalStatusArray):
         for status in msg.status_list:
-            assert isinstance(status, GoalStatus)  # TODO: remove
             goal_id_str = status.goal_info.goal_id.uuid.tobytes().hex()
 
             if goal_id_str not in self.follow_path_goals_info:
@@ -361,7 +354,6 @@ class Nav_stack_listener(Node):
 
     def nav_spin_status_callback(self, msg: GoalStatusArray):
         for status in msg.status_list:
-            assert isinstance(status, GoalStatus)  # TODO: remove
             goal_id_str = status.goal_info.goal_id.uuid.tobytes().hex()
 
             if goal_id_str not in self.spin_goals_info:
@@ -397,8 +389,6 @@ class Nav_stack_listener(Node):
 
     def nav_wait_feedback_callback(self, msg: Wait_FeedbackMessage):
 
-        # TODO: clean the mess about clock and time left.
-        # Maybe we can analyse the time in log_from_bag.py
         feedback = msg.feedback
 
         # Convert goal id bytes to hex string for logging
@@ -423,22 +413,14 @@ class Nav_stack_listener(Node):
         goal_info.time_left = feedback.time_left.sec + feedback.time_left.nanosec * 1e-9
 
     def nav_wait_status_callback(self, msg: GoalStatusArray):
-        # TODO: clean the mess about clock and time left.
         for status in msg.status_list:
-            assert isinstance(status, GoalStatus)  # TODO: remove
             goal_id_str = status.goal_info.goal_id.uuid.tobytes().hex()
 
             if goal_id_str not in self.wait_goals_info:
                 # If this is a new goal, initialize its info
                 self.wait_goals_info[goal_id_str] = WaitGoalInfo(goal_id_str)
 
-            current_clock = (
-                status.goal_info.stamp.sec + status.goal_info.stamp.nanosec * 1e-9
-            )
-
             goal_info = self.wait_goals_info[goal_id_str]
-            if goal_info.initial_clock is None:
-                goal_info.initial_clock = current_clock
 
             if goal_info.status != status.status:
                 # Log the status change
@@ -467,7 +449,6 @@ class Nav_stack_listener(Node):
     def nav_compute_path_to_pose_status_callback(self, msg: GoalStatusArray):
         """Handle status updates for the ComputePathToPose action."""
         for status in msg.status_list:
-            assert isinstance(status, GoalStatus)  # TODO: remove
             goal_id_str = status.goal_info.goal_id.uuid.tobytes().hex()
 
             if goal_id_str not in self.goals_info:
@@ -475,7 +456,6 @@ class Nav_stack_listener(Node):
                 self.goals_info[goal_id_str] = GoalInfo(goal_id_str)
 
             goal_info = self.goals_info[goal_id_str]
-            assert isinstance(goal_info, GoalInfo)  # TODO: remove
 
             if goal_info.compute_path_status != status.status:
                 # Log the status change
@@ -534,4 +514,4 @@ def main():
 if __name__ == "__main__":
     main()
 
-# Todo : should log current estimated position when it founds a problem
+# TODO : should log current estimated position when it founds a problem

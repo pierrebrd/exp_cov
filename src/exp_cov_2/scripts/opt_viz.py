@@ -169,15 +169,13 @@ def main():
         print(f"Total number of guards: {len(guard_position)}")
         print(f"Number of witnesses: {len(witness_position)}")
         for i, (x, y) in enumerate(guard_position):
-            # TODO: automatic scale for guard costs.
-            # img = cv2.circle(img, (int(x), int(y)), radius=1, color=(0, 0, 255-(255*(guard_cost[i]))), thickness=-1)
             img = cv2.circle(
                 img,
                 (int(x), int(y)),
                 radius=1,
                 color=(0, 0, 255 - (255 * (guard_cost[i] * 4))),
                 thickness=-1,
-            )  # to boost the color difference
+            )
         for x, y in witness_position:
             img = cv2.circle(
                 img,

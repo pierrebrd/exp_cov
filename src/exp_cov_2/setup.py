@@ -15,7 +15,7 @@ setup(
     maintainer="pierre",
     maintainer_email="pierrebrd7@gmail.com",
     description="ROS2 port of exp_cov by Davide Bertalero (d-ber)",
-    license="TODO: License declaration",
+    license="MIT",
     entry_points={
         "console_scripts": [
             "distance_check = exp_cov_2.distance_check:main",

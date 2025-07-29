@@ -239,19 +239,20 @@ def process_messages(messages, logfile_path, error_log_path):
                         info_log.write(format_log(timestamp, current_time, name, msg))
 
                     # Check for error conditions in the output
+                    # TODO : not sure if this is really useful
                     if "error" in msg.lower():
                         error_log.write(
                             f"{format_time(timestamp)}: Exploration Error - [{name}] {msg.strip()}\n"
                         )
-                    elif "abort" in msg.lower():  # TODO Not sure it is useful
+                    elif "abort" in msg.lower():  #
                         error_log.write(
                             f"{format_time(timestamp)}: Exploration Aborted - [{name}] {msg.strip()}\n"
                         )
-                    elif "stuck" in msg.lower():  # TODO Not sure it is useful
+                    elif "stuck" in msg.lower():
                         error_log.write(
                             f"{format_time(timestamp)}: Robot Stuck - [{name}] {msg.strip()}\n"
                         )
-                    elif "timeout" in msg.lower():  # TODO Not sure it is useful
+                    elif "timeout" in msg.lower():
                         error_log.write(
                             f"{format_time(timestamp)}: Operation Timeout - [{name}] {msg.strip()}\n"
                         )
@@ -304,22 +305,6 @@ def main():
     robot_path, goals, start_time, end_time = process_messages(
         messages, logfile_path, error_log_path
     )
-
-    # TODO: add ape and rpe stats to the log files
-    # ape_stats, rpe_stats = evo_metrics(
-    #     run_path, "/ground_truth", "/tf:map.base_link", plot=False, align_origin=False
-    # )
-    # if ape_stats:
-    #     print("APE stats:")
-    #     print(ape_stats)
-    # else:
-    #     print("No APE stats available or an error occurred.")
-
-    # if rpe_stats:
-    #     print("RPE stats:")
-    #     print(rpe_stats)
-    # else:
-    #     print("No RPE stats available or an error occurred.")
 
 
 if __name__ == "__main__":

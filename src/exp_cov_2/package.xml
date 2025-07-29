@@ -5,7 +5,7 @@
   <version>0.0.1</version>
   <description>ROS2 port of exp_cov by Davide Bertalero (d-ber)</description>
   <maintainer email="pierrebrd7@gmail.com">pierre</maintainer>
-  <license>TODO: License declaration</license>
+  <license>MIT</license>
   
   <depend>rclpy</depend>
 

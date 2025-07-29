@@ -12,7 +12,6 @@ class Distance_check(Node):
 
     def __init__(self):
         super().__init__("distance_check")
-        # TODO This node subscribes to /base_pose_ground_truth, I don't think it exists by default in ROS2
         self.sub = self.create_subscription(Odometry, "ground_truth", self.callback, 10)
         self.get_logger().info("Subscribed to ground_truth topic")
         self.total_distance = 0
