@@ -20,3 +20,8 @@ src/exp_cov_2/build/
 src/exp_cov_2/devel/
 src/exp_cov_2/log/
 src/exp_cov_2/install/
+
+pip-requirements.txt
+conda-requirements.txt
+environment.yml
+requirements.txt

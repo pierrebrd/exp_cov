@@ -1,0 +1,15 @@
+name: exp-cov-env
+channels:
+  - conda-forge
+dependencies:
+  - evo
+  - matplotlib
+  - pyqt
+  - python=3.10.12
+  - opencv
+  - shapely
+  - python-tsp
+  - amplpy
+  - progressbar2
+  - pip:
+      - pathfinding

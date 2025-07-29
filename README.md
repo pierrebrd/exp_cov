@@ -12,6 +12,14 @@ This project uses recursive submodules, so you need to clone it with the `--recu
 git clone --recurse-submodules <repo_url>
 ```
 
+You can install the conda environment with the following command
+
+```bash
+conda env create -f environment-minimal.yml
+```
+
+
+
 ## Content
 
 The project provides some utilities for experience-based coverage.
