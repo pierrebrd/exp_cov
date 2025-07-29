@@ -76,7 +76,16 @@ def format_time(timestamp=None):
     if timestamp is None:
         return time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
     else:
-        return time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(timestamp))
+        return time.strftime(
+            "%Y-%m-%d %H:%M:%S", time.gmtime(timestamp / 1_000_000_000)
+        )
+
+
+def format_log(timestamp, sim_time, name, msg):
+    "format a log message"
+    return (
+        f"{format_time(timestamp)}, sim_time: {sim_time:.1f}s [{name}] {msg.strip()}\n"
+    )
 
 
 def should_log_message(msg, name):
@@ -87,16 +96,29 @@ def should_log_message(msg, name):
         "sending goal",
         "was successful",
         "was aborted",
+        "failed to create",
+        "failed to generate a valid path",
+        "collision",
+        "for spin behavior",
+        "running wait",
+        "wait completed successfully",
+        "running backup",
         "blacklist",
         "black list",
         "found frontiers",  # Not working
         "waiting for costmap",
         "final distance",  # distance_check
         "too close to an obstacle",  # laser_scan_check
+        "aborted",
+        "cancelled",
+        "succeeded",
+        "failed",
     ]
 
     # Completely ignore certain types of messages
-    ignore_messages = []
+    ignore_messages = [
+        "worldtomap failed",
+    ]
 
     msg_lower = msg.lower()
     name_lower = name.lower()
@@ -113,7 +135,7 @@ def should_log_message(msg, name):
     )
 
 
-def process_messages(messages, logfile_path, error_log_path, info_log_path):
+def process_messages(messages, logfile_path, error_log_path):
     """Read the messages and select the appropriate action for each message"""
 
     global verbose
@@ -125,9 +147,9 @@ def process_messages(messages, logfile_path, error_log_path, info_log_path):
     start_time = None
     end_time = None
 
-    with open(logfile_path, mode="+a", encoding="utf-8") as logfile, open(
+    with open(logfile_path, mode="+a", encoding="utf-8") as info_log, open(
         error_log_path, mode="+a", encoding="utf-8"
-    ) as error_log, open(info_log_path, mode="+a", encoding="utf-8") as info_log:
+    ) as error_log:
         try:
             for topic, data, timestamp in messages:
                 if topic == "/clock":
@@ -141,9 +163,22 @@ def process_messages(messages, logfile_path, error_log_path, info_log_path):
                     goals.append([(data.x, data.y), current_time, None])
                     if not start_time:
                         start_time = current_time
-                        logfile.write(
-                            f"{format_time(timestamp/1_000_000_000)}: Starting run at sim time {start_time}.\n"
+                        info_log.write(
+                            format_log(
+                                timestamp,
+                                start_time,
+                                "info",
+                                f"Starting run at sim time {start_time}.",
+                            )
                         )
+                    info_log.write(
+                        format_log(
+                            timestamp,
+                            current_time,
+                            "info",
+                            f"Goal sent at {current_time}s: {data.x}, {data.y}",
+                        )
+                    )
                     if verbose:
                         print(f"Goal sent at {current_time}s: {data.x}, {data.y}")
 
@@ -159,10 +194,14 @@ def process_messages(messages, logfile_path, error_log_path, info_log_path):
                             # Set the current time as the reached time
                             goals[i][2] = current_time
                             goal_found = True
-                            if verbose:
-                                print(
-                                    f"Goal reached at {current_time}s, after {current_time-goals[i][1]}s: {goals[i][0]}"
+                            info_log.write(
+                                format_log(
+                                    timestamp,
+                                    current_time,
+                                    "info",
+                                    f"Goal reached at {current_time}s, after {current_time-goals[i][1]}s: {goals[i][0]}",
                                 )
+                            )
                             break
                     if not goal_found and verbose:
                         print(
@@ -197,44 +236,44 @@ def process_messages(messages, logfile_path, error_log_path, info_log_path):
                     level = data.level
 
                     if should_log_message(msg, name):
-                        info_log.write(
-                            f"{format_time(timestamp/1_000_000_000)}: [{name}] {msg.strip()}\n"
-                        )
+                        info_log.write(format_log(timestamp, current_time, name, msg))
 
                     # Check for error conditions in the output
                     if "error" in msg.lower():
                         error_log.write(
-                            f"{format_time(timestamp/1_000_000_000)}: Exploration Error - [{name}] {msg.strip()}\n"
+                            f"{format_time(timestamp)}: Exploration Error - [{name}] {msg.strip()}\n"
                         )
                     elif "abort" in msg.lower():  # TODO Not sure it is useful
                         error_log.write(
-                            f"{format_time(timestamp/1_000_000_000)}: Exploration Aborted - [{name}] {msg.strip()}\n"
+                            f"{format_time(timestamp)}: Exploration Aborted - [{name}] {msg.strip()}\n"
                         )
                     elif "stuck" in msg.lower():  # TODO Not sure it is useful
                         error_log.write(
-                            f"{format_time(timestamp/1_000_000_000)}: Robot Stuck - [{name}] {msg.strip()}\n"
+                            f"{format_time(timestamp)}: Robot Stuck - [{name}] {msg.strip()}\n"
                         )
                     elif "timeout" in msg.lower():  # TODO Not sure it is useful
                         error_log.write(
-                            f"{format_time(timestamp/1_000_000_000)}: Operation Timeout - [{name}] {msg.strip()}\n"
+                            f"{format_time(timestamp)}: Operation Timeout - [{name}] {msg.strip()}\n"
                         )
                     elif level >= WARN_LEVEL:
                         error_log.write(
-                            f"{format_time(timestamp/1_000_000_000)}: Geneneric error - [{name}] {msg.strip()}\n"
+                            f"{format_time(timestamp)}: Geneneric error - [{name}] {msg.strip()}\n"
                         )
 
                     if "exploration stopped." in msg.lower():
-                        logfile.write(
-                            f"{format_time(timestamp/1_000_000_000)}: Finished exploration : [{name}] {msg.strip()}.\n"
+                        info_log.write(
+                            format_log(
+                                timestamp,
+                                current_time,
+                                "info",
+                                f"Finished exploration, lasting {(current_time - start_time):.1f}s : [{name}] {msg.strip()}",
+                            )
                         )
                         break
 
-            logfile.write(
-                f"Exploration ends at sim time {end_time}, lasting {end_time - start_time}.\n"
-            )
         except KeyboardInterrupt as e:
             error_msg = f"Logging Interrupted by user.\n"
-            logfile.write(error_msg)
+            info_log.write(error_msg)
             error_log.write(error_msg)
         except Exception as e:
             error_msg = f"Unexpected error during exploration: {str(e)}\n"
@@ -259,12 +298,11 @@ def main():
         os.makedirs(logs_folder)
     logfile_path = os.path.join(logs_folder, "log.txt")
     error_log_path = os.path.join(logs_folder, "error_log.txt")
-    info_log_path = os.path.join(logs_folder, "info_log.txt")
 
     messages = read_rosbag2(bag_path)
 
     robot_path, goals, start_time, end_time = process_messages(
-        messages, logfile_path, error_log_path, info_log_path
+        messages, logfile_path, error_log_path
     )
 
     # TODO: add ape and rpe stats to the log files
