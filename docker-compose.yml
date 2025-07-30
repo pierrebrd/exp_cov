@@ -1,0 +1,65 @@
+# Docker compose config to run a container with the required mounts
+services:
+  exp_cov_initial_build: # For building the ROS2 packages the first time
+    image: ros2humble:exp_cov
+    container_name: exp_cov_initial_build
+    volumes:
+      # Bind mounts: current directory -> container
+      - .:/root/exp_cov
+    environment:
+      # - DISPLAY=:99
+      - ROS_DOMAIN_ID=42
+    working_dir: /root/exp_cov
+    stdin_open: true
+    tty: true
+    entrypoint: [./docker_scripts/initial_build.sh]
+    command: ["bash"]
+    profiles:
+      - initial_build
+
+  exp_cov_build: # For rebuilding the ROS2 packages
+    image: ros2humble:exp_cov
+    container_name: exp_cov_build
+    volumes:
+      # Bind mounts: current directory -> container
+      - .:/root/exp_cov
+    environment:
+      # - DISPLAY=:99
+      - ROS_DOMAIN_ID=42
+    working_dir: /root/exp_cov
+    stdin_open: true
+    tty: true
+    entrypoint: [./docker_scripts/build.sh]
+    command: ["bash"]
+    profiles:
+      - build
+  exp_cov_run: # For running the simulations
+    image: ros2humble:exp_cov
+    container_name: exp_cov_run
+    volumes:
+      # Bind mounts: current directory -> container
+      - .:/root/exp_cov
+    environment:
+      # - DISPLAY=:99
+      - ROS_DOMAIN_ID=42
+    working_dir: /root/exp_cov
+    stdin_open: true
+    tty: true
+    entrypoint: [./docker_scripts/run.sh]
+    command: ["bash"]
+    profiles:
+      - run
+
+  exp_cov_empty:
+    image: ros2humble:exp_cov
+    container_name: exp_cov_empty
+    volumes:
+      # Bind mounts: current directory -> container
+      - .:/root/exp_cov
+    environment:
+      # - DISPLAY=:99
+      - ROS_DOMAIN_ID=42
+    working_dir: /root/exp_cov
+    stdin_open: true
+    tty: true
+    command: ["bash"]
