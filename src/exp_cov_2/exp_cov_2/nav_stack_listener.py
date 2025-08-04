@@ -76,8 +76,6 @@ class WaitGoalInfo:
 class Nav_stack_listener(Node):
     def __init__(self):
         super().__init__("nav_stack_listener")
-        # self.logs_sub = self.create_subscription(Log, "rosout", self.logs_callback, 10)
-        # self.get_logger().info("Subscribed to rosout topic")
         self.goals_info = {}  # Dictionary to hold goal information
         self.backup_goals_info = {}  # Dictionary to hold backup goal information
         self.follow_path_goals_info = (
@@ -169,9 +167,6 @@ class Nav_stack_listener(Node):
 
         self.get_logger().info("Subscribed to nav2 topics")
 
-    def logs_callback(self, data):
-        self.get_logger().info(f"Log message received: {data.msg}")
-
     def nav_feedback_callback(self, msg: NavigateToPose_FeedbackMessage):
         feedback = msg.feedback
 
@@ -215,21 +210,23 @@ class Nav_stack_listener(Node):
                 # Log the status change
 
                 if status.status == GoalStatus.STATUS_SUCCEEDED:
-                    self.get_logger().info(f"Goal {goal_id_str[:8]}... has SUCCEEDED")
+                    self.get_logger().info(
+                        f"{goal_id_str[:8]}... nav goal has SUCCEEDED"
+                    )
 
                 elif status.status == GoalStatus.STATUS_ABORTED:
                     self.get_logger().warn(
-                        f"Goal {goal_id_str[:8]}... has been ABORTED, curent_pose: Point(x={goal_info.current_pose.pose.position.x}, y={goal_info.current_pose.pose.position.y}, z={goal_info.current_pose.pose.position.z}), Orientation(x={goal_info.current_pose.pose.orientation.x}, y={goal_info.current_pose.pose.orientation.y}, z={goal_info.current_pose.pose.orientation.z}, w={goal_info.current_pose.pose.orientation.w})"
+                        f"{goal_id_str[:8]}... nav goal has been ABORTED, curent_pose: Point(x={goal_info.current_pose.pose.position.x}, y={goal_info.current_pose.pose.position.y}, z={goal_info.current_pose.pose.position.z}), Orientation(x={goal_info.current_pose.pose.orientation.x}, y={goal_info.current_pose.pose.orientation.y}, z={goal_info.current_pose.pose.orientation.z}, w={goal_info.current_pose.pose.orientation.w})"
                     )
 
                 elif status.status == GoalStatus.STATUS_CANCELED:
                     self.get_logger().warn(
-                        f"Goal {goal_id_str[:8]}... has been CANCELED, curent_pose: Point(x={goal_info.current_pose.pose.position.x}, y={goal_info.current_pose.pose.position.y}, z={goal_info.current_pose.pose.position.z}), Orientation(x={goal_info.current_pose.pose.orientation.x}, y={goal_info.current_pose.pose.orientation.y}, z={goal_info.current_pose.pose.orientation.z}, w={goal_info.current_pose.pose.orientation.w})"
+                        f"{goal_id_str[:8]}... nav goal has been CANCELED, curent_pose: Point(x={goal_info.current_pose.pose.position.x}, y={goal_info.current_pose.pose.position.y}, z={goal_info.current_pose.pose.position.z}), Orientation(x={goal_info.current_pose.pose.orientation.x}, y={goal_info.current_pose.pose.orientation.y}, z={goal_info.current_pose.pose.orientation.z}, w={goal_info.current_pose.pose.orientation.w})"
                     )
 
                 else:
                     self.get_logger().info(
-                        f"Goal {goal_id_str[:8]}... status changed from {self.get_status_text(goal_info.status)} to {self.get_status_text(status.status)}"
+                        f"{goal_id_str[:8]}... nav goal status changed from {self.get_status_text(goal_info.status)} to {self.get_status_text(status.status)}"
                     )
                 # We update the goal status
                 goal_info.status = status.status
@@ -264,22 +261,22 @@ class Nav_stack_listener(Node):
 
                 if status.status == GoalStatus.STATUS_SUCCEEDED:
                     self.get_logger().info(
-                        f"Backup Goal {goal_id_str[:8]}... has SUCCEEDED, distance_traveled: {goal_info.distance_traveled}"
+                        f"{goal_id_str[:8]}...Backup Goal has SUCCEEDED, distance_traveled: {goal_info.distance_traveled:.3f}"
                     )
 
                 elif status.status == GoalStatus.STATUS_ABORTED:
                     self.get_logger().warn(
-                        f"Backup Goal {goal_id_str[:8]}... has been ABORTED, distance_traveled: {goal_info.distance_traveled}"
+                        f"{goal_id_str[:8]}...Backup Goal has been ABORTED, distance_traveled: {goal_info.distance_traveled:.3f}"
                     )
 
                 elif status.status == GoalStatus.STATUS_CANCELED:
                     self.get_logger().warn(
-                        f"Backup Goal {goal_id_str[:8]}... has been CANCELED, distance_traveled: {goal_info.distance_traveled}"
+                        f"{goal_id_str[:8]}...Backup Goal has been CANCELED, distance_traveled: {goal_info.distance_traveled:.3f}"
                     )
 
                 else:
                     self.get_logger().info(
-                        f"Backup Goal {goal_id_str[:8]}... status changed from {self.get_status_text(goal_info.status)} to {self.get_status_text(status.status)}"
+                        f"{goal_id_str[:8]}...Backup Goal status changed from {self.get_status_text(goal_info.status)} to {self.get_status_text(status.status)}"
                     )
                 # We update the goal status
                 goal_info.status = status.status
@@ -317,22 +314,22 @@ class Nav_stack_listener(Node):
 
                 if status.status == GoalStatus.STATUS_SUCCEEDED:
                     self.get_logger().info(
-                        f"FollowPath Goal {goal_id_str[:8]}... has SUCCEEDED, distance_to_goal: {goal_info.distance_to_goal}, speed: {goal_info.speed}"
+                        f"{goal_id_str[:8]}...FollowPath Goal has SUCCEEDED, distance_to_goal: {goal_info.distance_to_goal:.3f}, speed: {goal_info.speed:.3f}"
                     )
 
                 elif status.status == GoalStatus.STATUS_ABORTED:
                     self.get_logger().warn(
-                        f"FollowPath Goal {goal_id_str[:8]}... has been ABORTED, distance_to_goal: {goal_info.distance_to_goal}, speed: {goal_info.speed}"
+                        f"{goal_id_str[:8]}...FollowPath Goal has been ABORTED, distance_to_goal: {goal_info.distance_to_goal:.3f}, speed: {goal_info.speed:.3f}"
                     )
 
                 elif status.status == GoalStatus.STATUS_CANCELED:
                     self.get_logger().warn(
-                        f"FollowPath Goal {goal_id_str[:8]}... has been CANCELED, distance_to_goal: {goal_info.distance_to_goal}, speed: {goal_info.speed}"
+                        f"{goal_id_str[:8]}...FollowPath Goal has been CANCELED, distance_to_goal: {goal_info.distance_to_goal:.3f}, speed: {goal_info.speed:.3f}"
                     )
 
                 else:
                     self.get_logger().info(
-                        f"FollowPath Goal {goal_id_str[:8]}... status changed from {self.get_status_text(goal_info.status)} to {self.get_status_text(status.status)}"
+                        f"{goal_id_str[:8]}...FollowPath Goal status changed from {self.get_status_text(goal_info.status)} to {self.get_status_text(status.status)}"
                     )
                 # We update the goal status
                 goal_info.status = status.status
@@ -367,22 +364,22 @@ class Nav_stack_listener(Node):
 
                 if status.status == GoalStatus.STATUS_SUCCEEDED:
                     self.get_logger().info(
-                        f"Spin Goal {goal_id_str[:8]}... has SUCCEEDED, angular_distance_traveled: {goal_info.angular_distance_traveled}"
+                        f"{goal_id_str[:8]}...Spin Goal has SUCCEEDED, angular_distance_traveled: {goal_info.angular_distance_traveled:.3f}"
                     )
 
                 elif status.status == GoalStatus.STATUS_ABORTED:
                     self.get_logger().warn(
-                        f"Spin Goal {goal_id_str[:8]}... has been ABORTED, angular_distance_traveled: {goal_info.angular_distance_traveled}"
+                        f"{goal_id_str[:8]}...Spin Goal has been ABORTED, angular_distance_traveled: {goal_info.angular_distance_traveled:.3f}"
                     )
 
                 elif status.status == GoalStatus.STATUS_CANCELED:
                     self.get_logger().warn(
-                        f"Spin Goal {goal_id_str[:8]}... has been CANCELED, angular_distance_traveled: {goal_info.angular_distance_traveled}"
+                        f"{goal_id_str[:8]}...Spin Goal has been CANCELED, angular_distance_traveled: {goal_info.angular_distance_traveled:.3f}"
                     )
 
                 else:
                     self.get_logger().info(
-                        f"Spin Goal {goal_id_str[:8]}... status changed from {self.get_status_text(goal_info.status)} to {self.get_status_text(status.status)}"
+                        f"{goal_id_str[:8]}...Spin Goal status changed from {self.get_status_text(goal_info.status)} to {self.get_status_text(status.status)}"
                     )
                 # We update the goal status
                 goal_info.status = status.status
@@ -406,7 +403,7 @@ class Nav_stack_listener(Node):
                 feedback.time_left.sec + feedback.time_left.nanosec * 1e-9
             )
             self.get_logger().info(
-                f"Started Waiting, estimated_time_left: {goal_info.initial_time_left}s, Goal {goal_id_str[:8]}..."
+                f"{goal_id_str[:8]}... Started Waiting goal, estimated_time_left: {goal_info.initial_time_left:.3f}s"
             )
 
         # Update the feedback data
@@ -427,21 +424,21 @@ class Nav_stack_listener(Node):
 
                 if status.status == GoalStatus.STATUS_SUCCEEDED:
                     self.get_logger().info(
-                        f"Wait Goal {goal_id_str[:8]}... has SUCCEEDED, time_left: {goal_info.time_left}s"
+                        f"{goal_id_str[:8]}...Wait Goal has SUCCEEDED, time_left: {goal_info.time_left:.3f}s"
                     )
 
                 elif status.status == GoalStatus.STATUS_ABORTED:
                     self.get_logger().warn(
-                        f"Wait Goal {goal_id_str[:8]}... has ABORTED, time_left: {goal_info.time_left}s"
+                        f"{goal_id_str[:8]}...Wait Goal has been ABORTED, time_left: {goal_info.time_left:.3f}s"
                     )
                 elif status.status == GoalStatus.STATUS_CANCELED:
                     self.get_logger().warn(
-                        f"Wait Goal {goal_id_str[:8]}... has CANCELED, time_left: {goal_info.time_left}s"
+                        f"{goal_id_str[:8]}...Wait Goal has been CANCELED, time_left: {goal_info.time_left:.3f}s"
                     )
 
                 else:
                     self.get_logger().info(
-                        f"Wait Goal {goal_id_str[:8]}... status changed from {self.get_status_text(goal_info.status)} to {self.get_status_text(status.status)}"
+                        f"{goal_id_str[:8]}...Wait Goal status changed from {self.get_status_text(goal_info.status)} to {self.get_status_text(status.status)}"
                     )
                 # We update the goal status
                 goal_info.status = status.status
@@ -462,22 +459,22 @@ class Nav_stack_listener(Node):
 
                 if status.status == GoalStatus.STATUS_SUCCEEDED:
                     self.get_logger().info(
-                        f"ComputePathToPose Goal {goal_id_str[:8]}... has SUCCEEDED"
+                        f"{goal_id_str[:8]}... ComputePathToPose Goal has SUCCEEDED"
                     )
 
                 elif status.status == GoalStatus.STATUS_ABORTED:
                     self.get_logger().warn(
-                        f"ComputePathToPose Goal {goal_id_str[:8]}... has been ABORTED"
+                        f"{goal_id_str[:8]}... ComputePathToPose Goal has been ABORTED"
                     )
 
                 elif status.status == GoalStatus.STATUS_CANCELED:
                     self.get_logger().warn(
-                        f"ComputePathToPose Goal {goal_id_str[:8]}... has been CANCELED"
+                        f"{goal_id_str[:8]}... ComputePathToPose Goal has been CANCELED"
                     )
 
                 else:
                     self.get_logger().info(
-                        f"ComputePathToPose Goal {goal_id_str[:8]}... status changed from {self.get_status_text(goal_info.compute_path_status)} to {self.get_status_text(status.status)}"
+                        f"{goal_id_str[:8]}... ComputePathToPose Goal status changed from {self.get_status_text(goal_info.compute_path_status)} to {self.get_status_text(status.status)}"
                     )
                 # We update the goal status
                 goal_info.compute_path_status = status.status
