@@ -79,14 +79,19 @@ simulation:
     PARAMS_FILE: [""]
 
 additional_processes: # List of other nodes or launch files to run. The list containes dicts, with keys "package", "name", ...
-    - package: "exp_cov_2"
+    - package: "exploration_benchmarking"
       name: "laser_scan_check"
       is_launch_file: false
       other_params:
           distance_threshold: 0.6
-    - package: "exp_cov_2"
+          use_sim_time: "true"
+    - package: "exploration_benchmarking"
       name: "distance_check"
       is_launch_file: false
-    - package: "exp_cov_2"
+      other_params:
+          use_sim_time: "true"
+    - package: "exploration_benchmarking"
       name: "nav_stack_listener"
       is_launch_file: false
+      other_params:
+          use_sim_time: "true"
