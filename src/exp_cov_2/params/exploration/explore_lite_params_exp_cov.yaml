@@ -13,3 +13,4 @@
     gain_scale: 1.0 # TODO: adjust
     transform_tolerance: 0.3
     min_frontier_size: 0.75
+    use_sim_time: true # Use simulated time, set to false if using real time

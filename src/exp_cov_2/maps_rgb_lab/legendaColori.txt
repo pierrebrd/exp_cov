@@ -1,96 +1,96 @@
-OGGETTI NELLA MAPPA
+OBJECTS ON THE MAP
 ==================
 
-1. Oggetti Semistatici (Rosso)
+1. Semi-static Objects (Red)
 ------------------------------
-Rappresentazione: Oggetti che si muovono con frequenza bassa
-Range HSV: [0-5, 100-255, 100-255]
-Range RGB: [255,0,0] - [255,51,51]
-Valore consigliato:
+Representation: Objects that move infrequently
+HSV Range: [0-5, 100-255, 100-255]
+RGB Range: [255,0,0] - [255,51,51]
+Recommended value:
 - RGB: (255,0,0)
 - HSV: (0,255,255)
 - HEX: #FF0000
 
-2. Aree di Disturbo (Verde)
+2. Disturbance Areas (Green)
 --------------------------
-Rappresentazione: Zone con possibili ostacoli dinamici
-Range HSV: [60-65, 100-255, 100-255]
-Range RGB: [0,255,0] - [51,255,51]
-Valore consigliato:
+Representation: Zones with possible dynamic obstacles
+HSV Range: [60-65, 100-255, 100-255]
+RGB Range: [0,255,0] - [51,255,51]
+Recommended value:
 - RGB: (0,255,0)
 - HSV: (60,255,255)
 - HEX: #00FF00
 
-3. Clutter (Blu)
+3. Clutter (Blue)
 ---------------
-Rappresentazione: Oggetti che appaiono/scompaiono casualmente
-Range HSV: [120-125, 100-255, 100-255]
-Range RGB: [0,0,255] - [51,51,255]
-Valore consigliato:
+Representation: Objects that randomly appear/disappear
+HSV Range: [120-125, 100-255, 100-255]
+RGB Range: [0,0,255] - [51,51,255]
+Recommended value:
 - RGB: (0,0,255)
 - HSV: (120,255,255)
 - HEX: #0000FF
 
-STATI DELLE PORTE
+DOOR STATES
 ================
 
-1. Porta Aperta (Viola)
+1. Door Open (Purple)
 ----------------------
-Rappresentazione: Porta completamente aperta
-Range HSV: [300-305, 100-255, 100-255]
-Range RGB: [255,0,255] - [255,51,255]
-Valore consigliato:
+Representation: Door fully open
+HSV Range: [300-305, 100-255, 100-255]
+RGB Range: [255,0,255] - [255,51,255]
+Recommended value:
 - RGB: (255,0,255)
 - HSV: (300,255,255)
 - HEX: #FF00FF
 
-2. Porta 2/3 Aperta (Giallo)
+2. Door 2/3 Open (Yellow)
 ---------------------------
-Rappresentazione: Porta aperta per due terzi
-Range HSV: [25-30, 100-255, 100-255]
-Range RGB: [255,255,0] - [255,255,51]
-Valore consigliato:
+Representation: Door open by two thirds
+HSV Range: [25-30, 100-255, 100-255]
+RGB Range: [255,255,0] - [255,255,51]
+Recommended value:
 - RGB: (255,255,0)
 - HSV: (25,255,255)
 - HEX: #FFFF00
 
-3. Porta 2/3 Chiusa (Arancione Chiaro)
+3. Door 2/3 Closed (Light Orange)
 -------------------------------------
-Rappresentazione: Porta chiusa per due terzi
-Range HSV: [30-40, 100-255, 100-255]
-Range RGB: [255,165,0] - [255,191,51]
-Valore consigliato:
+Representation: Door closed by two thirds
+HSV Range: [30-40, 100-255, 100-255]
+RGB Range: [255,165,0] - [255,191,51]
+Recommended value:
 - RGB: (255,165,0)
 - HSV: (33,255,255)
 - HEX: #FFA500
 
-4. Porta Chiusa (Arancione)
+4. Door Closed (Orange)
 --------------------------
-Rappresentazione: Porta completamente chiusa
-Range HSV: [10-15, 100-255, 100-255]
-Range RGB: [255,128,0] - [255,153,51]
-Valore consigliato:
+Representation: Door fully closed
+HSV Range: [10-15, 100-255, 100-255]
+RGB Range: [255,128,0] - [255,153,51]
+Recommended value:
 - RGB: (255,128,0)
 - HSV: (10,255,255)
 - HEX: #FF8000
 
 
-AREE MOVIMENTO
+MOVEMENT AREAS
 =============
 
-Area Movimento (Giallo)
+Movement Area (Yellow)
 ----------------------
-Rappresentazione: Area entro cui un oggetto può muoversi
-Range HSV: [20-40, 100-255, 100-255]
-Range RGB: [255,255,0] - [255,255,51]
-Valore consigliato:
+Representation: Area within which an object can move
+HSV Range: [20-40, 100-255, 100-255]
+RGB Range: [255,255,0] - [255,255,51]
+Recommended value:
 - RGB: (255,255,0)
 - HSV: (30,255,255)
 - HEX: #FFFF00
 
-Note:
-- Tutti i colori hanno Saturazione e Valore nel range [100-255] per garantire colori vividi
-- Le porte hanno probabilità di stato: [30% aperta, 20% 2/3 aperta, 20% 2/3 chiusa, 30% chiusa]
-- Gli oggetti clutter (blu) hanno 50% di probabilità di apparire
-- La deviazione standard per la traslazione è: 10 pixel per rosso/blu, 0.1 pixel per verde
-- La deviazione standard per la rotazione è 20 gradi
+Notes:
+- All colors have Saturation and Value in the range [100-255] to ensure vivid colors
+- Doors have state probabilities: [30% open, 20% 2/3 open, 20% 2/3 closed, 30% closed]
+- Clutter objects (blue) have a 50% chance to appear
+- The standard deviation for translation is: 10 pixels for red/blue, 0.1 pixels for green
+- The standard deviation for rotation is 20 degrees

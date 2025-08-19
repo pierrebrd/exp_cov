@@ -1,5 +1,7 @@
 # Python script ported to ROS2 (just needed to modify the way the script finds the maps directory).
 
+# Green disturbnce areas are not used anymore
+
 from struct import pack
 
 # Required imports for image processing and data handling
@@ -172,13 +174,13 @@ def extract_color_pixels(
     colors = (RED, GREEN, BLUE)
     lower_ranges = (
         np.array([0, 100, 100]),  # red
-        np.array([60, 100, 100]),  # green (era 120)
-        np.array([120, 100, 100]),  # blue (era 240)
+        np.array([60, 100, 100]),  # green (was 120)
+        np.array([120, 100, 100]),  # blue (was 240)
     )
     upper_ranges = (
-        np.array([5, 255, 255]),  # red (era 10)
-        np.array([65, 255, 255]),  # green (era 130)
-        np.array([125, 255, 255]),  # blue (era 250)
+        np.array([5, 255, 255]),  # red (was 10)
+        np.array([65, 255, 255]),  # green (was 130)
+        np.array([125, 255, 255]),  # blue (was 250)
     )
 
     # movement_color = ("yellow")
@@ -201,16 +203,16 @@ def extract_color_pixels(
 
     door_colors = (PURPLE, YELLOW, LIGHT_ORANGE, ORANGE)
     lower_door_range = (
-        np.array([150, 100, 100]),  # purple/open (era 300)
-        np.array([25, 100, 100]),  # yellow/2/3 open (era 50)
-        np.array([17, 100, 100]),  # light orange/2/3 closed (era 35)
-        np.array([10, 100, 100]),  # orange/closed (era 20)
+        np.array([150, 100, 100]),  # purple/open (was 300)
+        np.array([25, 100, 100]),  # yellow/2/3 open (was 50)
+        np.array([17, 100, 100]),  # light orange/2/3 closed (was 35)
+        np.array([10, 100, 100]),  # orange/closed (was 20)
     )
     upper_door_range = (
-        np.array([155, 255, 255]),  # purple (era 310)
-        np.array([30, 255, 255]),  # yellow (era 60)
-        np.array([22, 255, 255]),  # light orange (era 45)
-        np.array([15, 255, 255]),  # orange (era 30)
+        np.array([155, 255, 255]),  # purple (was 310)
+        np.array([30, 255, 255]),  # yellow (was 60)
+        np.array([22, 255, 255]),  # light orange (was 45)
+        np.array([15, 255, 255]),  # orange (was 30)
     )
 
     # To work with doors
@@ -450,13 +452,13 @@ def extract_color_pixels(
     size_width = sizey  # Map width in meters
     size_height = sizex  # Map height in meters
 
-    # Itera su tutti gli oggetti trovati nell'immagine
+    # Iterate over all objects found in the image
     for j, (contour, obj_color_idx, object_image, movement_area) in enumerate(
         contour_obj_image_movement_area
     ):
         if colors[obj_color_idx] == GREEN:
             # For green areas, apply limited translation without rotation
-            # translate_obj restituisce anche dx e dy dello spostamento effettuato
+            # translate_obj also returns the dx and dy of the performed shift
             _, dx, dy = translate_obj(
                 object_image,
                 movement_area,
@@ -578,11 +580,11 @@ def extract_color_pixels(
         # Convert the list to JSON format
         json_data = json.dumps(rectangles_info, indent=4)
 
-        # Write JSON data to a file
-        with open(rectangles_path, "w") as json_file:
-            json_file.write(json_data)
-            if not silent:
-                print(f"Saved rectangles info as {rectangles_path}")
+        # # Write JSON data to a file
+        # with open(rectangles_path, "w") as json_file:
+        #     json_file.write(json_data)
+        #     if not silent:
+        #         print(f"Saved rectangles info as {rectangles_path}")
 
     return translated_objs_image
 
@@ -685,7 +687,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Modify rgb maps automatically.")
     parser.add_argument(
         "--map",
-        default=os.path.join(package_path, "maps_rgb_lab/map1/map1_rgb.png"),
+        default=os.path.join(package_path, "maps_rgb_lab/map1/map1_doors.png"),
         help="Path to the rgb map file.",
         metavar="MAP_PATH",
     )
@@ -696,12 +698,12 @@ def parse_args():
         metavar="MASK_PATH",
     )
     parser.add_argument(
-        "--show", action="store_true", help="Use this to show a final recap."
+        "--show", action="store_true", help="Use this to show the map creation steps."
     )
     parser.add_argument(
         "--save",
         action="store_true",
-        help="Use this to save the produced map and rectangles info.",
+        help="Use this to save the produced map info.",
     )
     parser.add_argument(
         "-b",
@@ -709,14 +711,14 @@ def parse_args():
         type=check_positive,
         default=1,
         metavar="N",
-        help="Use this to produce N maps and save them.",
+        help="Use this to produce N maps and save them, without producing Stage worlds configurations.",
     )
     parser.add_argument(
         "--worlds",
         type=check_positive_or_zero,
         default=0,
         metavar="N",
-        help="Use this to produce N maps and save them.",
+        help="Use this to produce N maps and save them, along with Stage world files.",
     )
     parser.add_argument(
         "--no-timestamp",
@@ -868,7 +870,7 @@ def get_world_text(image, name, speedup, pose, scale, sizex, sizey):
         name  "turtlebot3-stage"
         size [ {sizey} {sizex} 1.0 ] # size [x y z]
         pose [0 0 0 0]
-        bitmap "bitmaps/image{image}.png" # bitmap: solo il nero è renderizzato
+        bitmap "bitmaps/image{image}.png" # bitmap: only black is rendered
     )
     turtlebot3
     (		  
@@ -913,42 +915,45 @@ Processes arguments and generates modified maps.
 def main():
     # Parse command line arguments
     args = parse_args()
-    image_path = args.map  # Percorso dell'immagine RGB di input
-    show_recap = args.show  # Flag per mostrare un riepilogo finale
-    show_steps = args.steps  # Flag per mostrare i passaggi intermedi
-    save_map = args.save  # Flag per salvare la mappa modificata
-    batch = args.batch  # Numero di mappe da generare in batch
-    no_timestamp = args.no_timestamp  # Flag per salvare senza timestamp
-    base_dir = args.dir  # Directory base per il salvataggio
-    movement_mask_image_path = (
-        args.mask
-    )  # Percorso della maschera delle aree di movimento
-    worlds = args.worlds  # Numero di mondi da generare
-    speedup = args.speedup  # Fattore di accelerazione simulazione
-    pose = args.pose  # Posizione iniziale del robot (x,y)
-    scale = args.scale  # Scala in metri/pixel
-    world_num = args.world_num  # Numero specifico del mondo da generare
-    silent = args.silent  # Flag per sopprimere i messaggi
-    seed = args.seed  # Seed per la generazione random
+    image_path = args.map  # Path of the input RGB image
+    show_recap = args.show  # Flag to show a final recap
+    show_steps = args.steps  # Flag to show intermediate steps
+    save_map = args.save  # Flag to save the modified map
+    batch = args.batch  # Number of maps to generate in batch
+    no_timestamp = args.no_timestamp  # Flag to save without timestamp
+    base_dir = args.dir  # Base directory for saving
+    movement_mask_image_path = args.mask  # Path of the movement areas mask
+    worlds = args.worlds  # Number of worlds to generate
+    speedup = args.speedup  # Simulation speedup factor
+    pose = args.pose  # Robot initial position (x,y)
+    scale = args.scale  # Scale in meters/pixel
+    world_num = args.world_num  # Specific world number to generate
+    silent = args.silent  # Flag to suppress messages
+    seed = args.seed  # Seed for random generation
 
-    # Carica le immagini di input
+    # Load input images
     movement_mask_image = cv2.imread(movement_mask_image_path, cv2.IMREAD_COLOR)
     image = cv2.imread(image_path, cv2.IMREAD_COLOR)
 
-    # Calcola le dimensioni della mappa in metri
+    # Compute map dimensions in meters
     sizex = image.shape[0]
     sizex = sizex / (1 / scale)
     sizey = image.shape[1]
     sizey = sizey / (1 / scale)
 
-    # Gestisce i diversi casi di generazione mappe
+    # Handle the different map generation cases
     if worlds == 0 and world_num is None:
+
+        batchmaps_dir = os.path.join(base_dir, "batchmaps")
+        if not os.path.exists(batchmaps_dir) or not os.path.isdir(batchmaps_dir):
+            os.makedirs(batchmaps_dir)
+
         if batch == 1:
             # Single map case
             rectangles_path = (
-                os.path.join(base_dir, "rectangles.json")
+                os.path.join(batchmaps_dir, "rectangles.json")
                 if no_timestamp
-                else os.path.join(base_dir, f"rectangles_{time.time_ns()}.json")
+                else os.path.join(batchmaps_dir, f"rectangles_{time.time_ns()}.json")
             )
             image_modified = extract_color_pixels(
                 image,
@@ -965,14 +970,14 @@ def main():
 
             # Save the modified map if requested
             if save_map:
-                filename = get_non_existent_filename(base_dir, no_timestamp)
+                filename = get_non_existent_filename(batchmaps_dir, no_timestamp)
                 cv2.imwrite(filename, image_modified)
                 if not silent:
                     print(f"Saved map as {filename}")
         else:
             # Batch map case
             for i in range(batch):
-                rectangles_path = os.path.join(base_dir, f"rectangles_{i}.json")
+                rectangles_path = os.path.join(batchmaps_dir, f"rectangles_{i}.json")
                 image_modified = extract_color_pixels(
                     image,
                     movement_mask_image,
@@ -985,7 +990,7 @@ def main():
                     silent=silent,
                     seed=seed,
                 )
-                filename = os.path.join(base_dir, f"image_{i}.png")
+                filename = os.path.join(batchmaps_dir, f"image_{i}.png")
                 cv2.imwrite(filename, image_modified)
                 if not silent:
                     print(f"Saved map as {filename}")

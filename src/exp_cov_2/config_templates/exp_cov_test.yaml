@@ -1,6 +1,6 @@
 # The variables in UPPERCASE are list where each item will be use to generate runs
 
-map_saver_interval: 60 # seconds, wall time
+map_saver_interval: 10 # seconds, wall time
 rviz_config: "rviz/explore-lite.rviz"
 rosbag2_recorded_topics: [
         "/odom", # robot odometry
@@ -13,6 +13,9 @@ rosbag2_recorded_topics: [
         "/scan", # Useful for replaying
         "/tf",
         "/tf_static",
+        "/robot_distances",
+        "/closest_obstacle",
+        "/estimated_pose",
         # "-a",
     ]
 
@@ -59,9 +62,6 @@ exploration:
     package: "explore_lite"
     name: "explore"
     is_launch_file: false
-    params_file_argument: "" # Not used for a node
-    # other_params maybe i could put the use sim time here
-    launchfile_args: {}
     ros_args: ["--log-level", "info", "--log-level", "rcl:=warn"]
     PARAMS_FILE:
         ["../../exp_cov_2/params/exploration/explore_lite_params_exp_cov.yaml"]
@@ -92,6 +92,11 @@ additional_processes: # List of other nodes or launch files to run. The list con
           use_sim_time: "true"
     - package: "exploration_benchmarking"
       name: "nav_stack_listener"
+      is_launch_file: false
+      other_params:
+          use_sim_time: "true"
+    - package: "exploration_benchmarking"
+      name: "estimated_pose_publisher"
       is_launch_file: false
       other_params:
           use_sim_time: "true"
