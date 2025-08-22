@@ -1,0 +1,349 @@
+# The variables in UPPERCASE are list where each item will be use to generate runs
+
+map_saver_interval: 20 # seconds, wall time
+rviz_config: "rviz/explore-lite.rviz"
+rosbag2_recorded_topics: [
+        "/odom", # robot odometry
+        "/ground_truth", # ground truth robot position
+        "/cmd_vel",
+        "/rosout", # logs, not really useful
+        "/goal_sent", # goals sent by the exploration algorithmFalse
+        "/goal_reached", # goals reached by the exploration algorithm
+        "/clock", # clock, to use sim time
+        "/scan", # Useful for replaying
+        "/tf",
+        "/tf_static",
+        "/robot_distances",
+        "/closest_obstacle",
+        "/estimated_pose",
+        # "-a",
+    ]
+
+WORLD_NAME: [
+        "world0",
+        "world1",
+        "world2",
+        "world3",
+        "world4",
+        "world5",
+        "world6",
+        "world7",
+        "world8",
+        "world9",
+        "world10",
+        "world11",
+        "world12",
+        "world13",
+        "world14",
+        "world15",
+        "world16",
+        "world17",
+        "world18",
+        "world19",
+        "world20",
+        "world21",
+        "world22",
+        "world23",
+        "world24",
+        "world25",
+        "world26",
+        "world27",
+        "world28",
+        "world29",
+        "world30",
+        "world31",
+        "world32",
+        "world33",
+        "world34",
+        "world35",
+        "world36",
+        "world37",
+        "world38",
+        "world39",
+        "world40",
+        "world41",
+        "world42",
+        "world43",
+        "world44",
+        "world45",
+        "world46",
+        "world47",
+        "world48",
+        "world49",
+        "world50",
+        "world51",
+        "world52",
+        "world53",
+        "world54",
+        "world55",
+        "world56",
+        "world57",
+        "world58",
+        "world59",
+        "world60",
+        "world61",
+        "world62",
+        "world63",
+        "world64",
+        "world65",
+        "world66",
+        "world67",
+        "world68",
+        "world69",
+        "world70",
+        "world71",
+        "world72",
+        "world73",
+        "world74",
+        "world75",
+        "world76",
+        "world77",
+        "world78",
+        "world79",
+        "world80",
+        "world81",
+        "world82",
+        "world83",
+        "world84",
+        "world85",
+        "world86",
+        "world87",
+        "world88",
+        "world89",
+        "world90",
+        "world91",
+        "world92",
+        "world93",
+        "world94",
+        "world95",
+        "world96",
+        "world97",
+        "world98",
+        "world99",
+        # "world100",
+        # "world101",
+        # "world102",
+        # "world103",
+        # "world104",
+        # "world105",
+        # "world106",
+        # "world107",
+        # "world108",
+        # "world109",
+        # "world110",
+        # "world111",
+        # "world112",
+        # "world113",
+        # "world114",
+        # "world115",
+        # "world116",
+        # "world117",
+        # "world118",
+        # "world119",
+        # "world120",
+        # "world121",
+        # "world122",
+        # "world123",
+        # "world124",
+        # "world125",
+        # "world126",
+        # "world127",
+        # "world128",
+        # "world129",
+        # "world130",
+        # "world131",
+        # "world132",
+        # "world133",
+        # "world134",
+        # "world135",
+        # "world136",
+        # "world137",
+        # "world138",
+        # "world139",
+        # "world140",
+        # "world141",
+        # "world142",
+        # "world143",
+        # "world144",
+        # "world145",
+        # "world146",
+        # "world147",
+        # "world148",
+        # "world149",
+        # "world150",
+        # "world151",
+        # "world152",
+        # "world153",
+        # "world154",
+        # "world155",
+        # "world156",
+        # "world157",
+        # "world158",
+        # "world159",
+        # "world160",
+        # "world161",
+        # "world162",
+        # "world163",
+        # "world164",
+        # "world165",
+        # "world166",
+        # "world167",
+        # "world168",
+        # "world169",
+        # "world170",
+        # "world171",
+        # "world172",
+        # "world173",
+        # "world174",
+        # "world175",
+        # "world176",
+        # "world177",
+        # "world178",
+        # "world179",
+        # "world180",
+        # "world181",
+        # "world182",
+        # "world183",
+        # "world184",
+        # "world185",
+        # "world186",
+        # "world187",
+        # "world188",
+        # "world189",
+        # "world190",
+        # "world191",
+        # "world192",
+        # "world193",
+        # "world194",
+        # "world195",
+        # "world196",
+        # "world197",
+        # "world198",
+        # "world199",
+        # "world200",
+        # "world201",
+        # "world202",
+        # "world203",
+        # "world204",
+        # "world205",
+        # "world206",
+        # "world207",
+        # "world208",
+        # "world209",
+        # "world210",
+        # "world211",
+        # "world212",
+        # "world213",
+        # "world214",
+        # "world215",
+        # "world216",
+        # "world217",
+        # "world218",
+        # "world219",
+        # "world220",
+        # "world221",
+        # "world222",
+        # "world223",
+        # "world224",
+        # "world225",
+        # "world226",
+        # "world227",
+        # "world228",
+        # "world229",
+        # "world230",
+        # "world231",
+        # "world232",
+        # "world233",
+        # "world234",
+        # "world235",
+        # "world236",
+        # "world237",
+        # "world238",
+        # "world239",
+        # "world240",
+        # "world241",
+        # "world242",
+        # "world243",
+        # "world244",
+        # "world245",
+        # "world246",
+        # "world247",
+        # "world248",
+        # "world249"
+    ]
+
+worlds_folder: "../../exp_cov_2/worlds2" # Relative path to the folder containing the worlds, from the folder where singlerun.py is.
+
+slam:
+    # package: "slam_toolbox" # Package containing the SLAM node /launch file
+    # name: "online_async_launch.py" # Can be launch file (ending with .py or .xml) or node name (e.g. "slam_toolbox")
+    # is_launch_file: true # Set to true if slam_name is a launch file, false if it is a node name.
+    # params_file_argument: "slam_params_file" # The name of the argument to pass the params file to the launchfile.
+    # launchfile_args: # For a launchfile
+    #     use_sim_time: "true"
+    #     autostart: "true"
+    # ros_args: [] # Other arguments to pass to the CLI, without the "--ros-args" prefix.
+    # PARAMS_FILE: ["../../exp_cov_2/params/slam/slam_toolbox_exp_cov.yaml"] # Relative Path to the SLAM parameters file for nodes, from the folder where singlerun.py is. if using a launchfile, the path will be passed on the params_file argument.
+    package: "gmapper" # Package containing the SLAM node /launch file
+    name: "gmap" # Can be launch file (ending with .py or .xml) or node name (e.g. "slam_toolbox")
+    is_launch_file: false # Set to true if slam_name is a launch file, false if it is a node name.
+    params_file: "../../exp_cov_2/params/slam/gmapping_exp_cov.yaml" # Relative Path to the SLAM parameters file for nodes, from the folder where singlerun.py is. if using a launchfile, the path will be passed on the params_file argument.
+    params_file_argument: "" # The name of the argument to pass the params file to the launchfile.
+    other_params: {} # Other params to override the params_file for a node. use_sim_time is included in the parameters file
+    launchfile_args: {} # For a launchfile
+    ros_args: ["--log-level", "info", "--log-level", "rcl:=warn"] # Other arguments to pass to the CLI, without the "--ros-args" prefix.
+
+navigation:
+    package: "nav2_bringup"
+    name: "navigation_launch.py"
+    is_launch_file: true
+    params_file_argument: "params_file"
+    ros_args: []
+    launchfile_args:
+        use_sim_time: "true"
+        autostart: "true"
+        log_level: "info"
+    PARAMS_FILE: ["../../exp_cov_2/params/navigation/nav2_params.yaml"] # List of params files. The generator will create a run params for every file in the list
+
+exploration:
+    package: "explore_lite"
+    name: "explore"
+    is_launch_file: false
+    ros_args: ["--log-level", "info", "--log-level", "rcl:=warn"]
+    PARAMS_FILE:
+        ["../../exp_cov_2/params/exploration/explore_lite_params_exp_cov.yaml"]
+
+simulation:
+    package: "stage_ros2"
+    name: "stage.launch.py"
+    is_launch_file: true
+    params_file_argument: "" # Not used here
+    launchfile_args:
+        enforce_prefixes: "false"
+        use_static_transformations: "true"
+        one_tf_tree: "false"
+    ros_args: []
+    PARAMS_FILE: [""]
+
+additional_processes: # List of other nodes or launch files to run. The list containes dicts, with keys "package", "name", ...
+    - package: "exploration_benchmarking"
+      name: "laser_scan_check"
+      is_launch_file: false
+      other_params:
+          distance_threshold: 0.2
+          use_sim_time: "true"
+    - package: "exploration_benchmarking"
+      name: "distance_check"
+      is_launch_file: false
+      other_params:
+          use_sim_time: "true"
+    - package: "exploration_benchmarking"
+      name: "nav_stack_listener"
+      is_launch_file: false
+      other_params:
+          use_sim_time: "true"
+    - package: "exploration_benchmarking"
+      name: "estimated_pose_publisher"
+      is_launch_file: false
+      other_params:
+          use_sim_time: "true"

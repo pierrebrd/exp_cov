@@ -235,7 +235,7 @@ def extract_color_pixels(
         door_contours.append(contours)
 
     # Door state probabilities [open, 2/3 open, 2/3 closed, closed]
-    DOOR_PROBS = [0.3, 0.2, 0.2, 0.3]
+    DOOR_PROBS = [0.4, 0.2, 0.2, 0.2]
     door_state = st.rv_discrete(values=(range(len(DOOR_PROBS)), DOOR_PROBS))
 
     # Manage the rng seeding
@@ -749,7 +749,7 @@ def parse_args():
     parser.add_argument(
         "--scale",
         type=check_positive_float,
-        default=0.035888,
+        default=0.035888,  # 28 pixels per meter
         metavar="PIXELS",
         help="Number of meters per pixel in png map.",
     )

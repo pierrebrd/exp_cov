@@ -1,0 +1,85 @@
+map_saver_interval: 3
+rviz_config: rviz/explore-lite.rviz
+rosbag2_recorded_topics:
+- /odom
+- /ground_truth
+- /cmd_vel
+- /rosout
+- /goal_sent
+- /goal_reached
+- /clock
+- /scan
+- /tf
+- /tf_static
+- /robot_distances
+- /closest_obstacle
+- /estimated_pose
+world_name: world4
+worlds_folder: ../../exp_cov_2/worlds2
+slam:
+    package: gmapper
+    name: gmap
+    is_launch_file: false
+    params_file: ../../exp_cov_2/params/slam/gmapping_exp_cov.yaml
+    params_file_argument: ''
+    other_params: {}
+    launchfile_args: {}
+    ros_args:
+    - --log-level
+    - info
+    - --log-level
+    - rcl:=warn
+navigation:
+    package: nav2_bringup
+    name: navigation_launch.py
+    is_launch_file: true
+    params_file_argument: params_file
+    ros_args: []
+    launchfile_args:
+        use_sim_time: 'true'
+        autostart: 'true'
+        log_level: info
+    params_file: ../../exp_cov_2/params/navigation/nav2_params.yaml
+exploration:
+    package: explore_lite
+    name: explore
+    is_launch_file: false
+    ros_args:
+    - --log-level
+    - info
+    - --log-level
+    - rcl:=warn
+    params_file: ../../exp_cov_2/params/exploration/explore_lite_params_exp_cov.yaml
+simulation:
+    package: stage_ros2
+    name: stage.launch.py
+    is_launch_file: true
+    params_file_argument: ''
+    launchfile_args:
+        enforce_prefixes: 'false'
+        use_static_transformations: 'true'
+        one_tf_tree: 'false'
+    ros_args: []
+    params_file: ''
+additional_processes:
+-   package: exploration_benchmarking
+    name: laser_scan_check
+    is_launch_file: false
+    other_params:
+        distance_threshold: 0.2
+        use_sim_time: 'true'
+-   package: exploration_benchmarking
+    name: distance_check
+    is_launch_file: false
+    other_params:
+        use_sim_time: 'true'
+-   package: exploration_benchmarking
+    name: nav_stack_listener
+    is_launch_file: false
+    other_params:
+        use_sim_time: 'true'
+-   package: exploration_benchmarking
+    name: estimated_pose_publisher
+    is_launch_file: false
+    other_params:
+        use_sim_time: 'true'
