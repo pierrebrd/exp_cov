@@ -120,12 +120,12 @@ def print_dat(
     print_simple_param(output_file, "nW", nW)
     print_simple_param(output_file, "nG", nG)
 
-    coverage = []
+    coverage_list = []
     coverable = 0
     with concurrent.futures.ProcessPoolExecutor() as executor:
         coverage_w_data = [(i, poly, w, guards) for i, w in enumerate(witnesses)]
         for i, cov_w in executor.map(coverage_w, coverage_w_data):
-            coverage.insert(i, cov_w)
+            coverage_list.insert(i, cov_w)
             if any(cov_w):
                 coverable += 1
 
@@ -149,7 +149,7 @@ def print_dat(
 
     print_vector_param(output_file, "guard_cost", guard_costs)
 
-    print_bidimensional_param(output_file, "coverage", nW, nG, coverage)
+    print_bidimensional_param(output_file, "coverage", nW, nG, coverage_list)
 
     distances = []
     with concurrent.futures.ProcessPoolExecutor() as executor:
