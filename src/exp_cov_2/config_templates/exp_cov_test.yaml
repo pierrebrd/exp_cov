@@ -36,15 +36,23 @@ WORLD_NAME:
 worlds_folder: "../../exp_cov_2/worlds" # Relative path to the folder containing the worlds, from the folder where singlerun.py is.
 
 slam:
-    package: "slam_toolbox" # Package containing the SLAM node /launch file
-    name: "online_async_launch.py" # Can be launch file (ending with .py or .xml) or node name (e.g. "slam_toolbox")
-    is_launch_file: true # Set to true if slam_name is a launch file, false if it is a node name.
-    params_file_argument: "slam_params_file" # The name of the argument to pass the params file to the launchfile.
-    launchfile_args: # For a launchfile
-        use_sim_time: "true"
-        autostart: "true"
-    ros_args: [] # Other arguments to pass to the CLI, without the "--ros-args" prefix.
-    PARAMS_FILE: ["../../exp_cov_2/params/slam/slam_toolbox_exp_cov.yaml"] # Relative Path to the SLAM parameters file for nodes, from the folder where singlerun.py is. if using a launchfile, the path will be passed on the params_file argument.
+    # package: "slam_toolbox" # Package containing the SLAM node /launch file
+    # name: "online_async_launch.py" # Can be launch file (ending with .py or .xml) or node name (e.g. "slam_toolbox")
+    # is_launch_file: true # Set to true if slam_name is a launch file, false if it is a node name.
+    # params_file_argument: "slam_params_file" # The name of the argument to pass the params file to the launchfile.
+    # launchfile_args: # For a launchfile
+    #     use_sim_time: "true"
+    #     autostart: "true"
+    # ros_args: [] # Other arguments to pass to the CLI, without the "--ros-args" prefix.
+    # PARAMS_FILE: ["../../exp_cov_2/params/slam/slam_toolbox_exp_cov.yaml"] # Relative Path to the SLAM parameters file for nodes, from the folder where singlerun.py is. if using a launchfile, the path will be passed on the params_file argument.
+    package: "gmapper" # Package containing the SLAM node /launch file
+    name: "gmap" # Can be launch file (ending with .py or .xml) or node name (e.g. "slam_toolbox")
+    is_launch_file: false # Set to true if slam_name is a launch file, false if it is a node name.
+    params_file: "../../exp_cov_2/params/slam/gmapping_exp_cov.yaml" # Relative Path to the SLAM parameters file for nodes, from the folder where singlerun.py is. if using a launchfile, the path will be passed on the params_file argument.
+    params_file_argument: "" # The name of the argument to pass the params file to the launchfile.
+    other_params: {} # Other params to override the params_file for a node. use_sim_time is included in the parameters file
+    launchfile_args: {} # For a launchfile
+    ros_args: ["--log-level", "info", "--log-level", "rcl:=warn"] # Other arguments to pass to the CLI, without the "--ros-args" prefix.
 
 navigation:
     package: "nav2_bringup"
